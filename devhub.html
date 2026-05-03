@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Dev Hub</title>
+<style>
+:root {
+  --bg: #0f0f12;
+  --surface: #1c1c20;
+  --surface2: #26262b;
+  --border: #36363c;
+  --text: #ebebf0;
+  --muted: #8e8e93;
+  --accent: #4da6ff;
+  --accent-bg: rgba(77,166,255,.14);
+  --green: #30d158;
+  --green-bg: rgba(48,209,88,.13);
+  --yellow: #ffd60a;
+  --yellow-bg: rgba(255,214,10,.12);
+  --red: #ff453a;
+  --red-bg: rgba(255,69,58,.12);
+  --pill: 20px;
+  --r: 10px;
+  --rs: 6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+::selection{background:var(--accent-bg)}
+input,select,textarea{color:var(--text);background:var(--surface2)}
+
+/* ── LOGIN ── */
+#login-screen{display:flex;position:fixed;inset:0;background:var(--bg);z-index:500;align-items:center;justify-content:center;padding:20px}
+#login-screen.off{display:none}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:32px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:14px}
+.login-logo{font-size:22px;font-weight:800;color:var(--accent);letter-spacing:-.5px;text-align:center}
+.login-sub{font-size:13px;color:var(--muted);text-align:center}
+.login-err{font-size:12px;color:var(--red);text-align:center;min-height:16px;line-height:1.4}
+.login-tabs{display:flex;border:1px solid var(--border);border-radius:var(--pill);overflow:hidden}
+.login-tab{flex:1;padding:8px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--muted);transition:all .15s}
+.login-tab.on{background:var(--accent);color:#000;font-weight:600}
+
+/* ── HEADER ── */
+#hdr{position:sticky;top:0;z-index:100;background:rgba(15,15,18,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;gap:8px;align-items:center}
+.app-name{font-weight:800;font-size:15px;color:var(--accent);white-space:nowrap;letter-spacing:-.5px}
+.sw{position:relative;flex:1}
+#gs{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--pill);font-size:13px;outline:none;background:var(--surface2);color:var(--text)}
+#gs:focus{border-color:var(--accent)}
+#gs::placeholder{color:var(--muted)}
+#sd{display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 8px 24px rgba(0,0,0,.5);z-index:200;max-height:360px;overflow-y:auto}
+.sri{padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.sri:last-child{border:none}
+.sri:hover{background:var(--surface2)}
+.sri-type{font-size:11px;padding:2px 7px;border-radius:var(--pill);background:var(--surface2);color:var(--muted);white-space:nowrap}
+#sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;transition:background .3s;flex-shrink:0}
+#sync-dot.syncing{background:var(--yellow)}
+#sync-dot.error{background:var(--red)}
+
+/* ── NAV ── */
+nav{background:var(--surface);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;padding:0 8px}
+nav button{padding:11px 16px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s}
+nav button.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+nav button:hover:not(.on){color:var(--text)}
+
+/* ── MAIN ── */
+main{max-width:1200px;margin:0 auto;padding:16px}
+.tab{display:none}
+.tab.on{display:block}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border:1px solid var(--border);border-radius:var(--pill);background:var(--surface2);cursor:pointer;font-size:13px;color:var(--text);transition:background .12s,border-color .12s;white-space:nowrap}
+.btn:hover{background:var(--border)}
+.btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600}
+.btn.primary:hover{background:#3a9aff}
+.btn.danger{color:var(--red);border-color:var(--red-bg)}
+.btn.danger:hover{background:var(--red-bg)}
+.btn.sm{padding:5px 11px;font-size:12px}
+.btn.xs{padding:3px 8px;font-size:11px;border-radius:var(--pill);background:var(--surface2)}
+.btn.xs:hover{background:var(--border)}
+.btn.ghost{background:none;border-color:transparent}
+.btn.ghost:hover{background:var(--surface2)}
+
+/* ── LAYOUT ── */
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap}
+.sh-title{font-size:16px;font-weight:700}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.fb{padding:5px 12px;border:1px solid var(--border);border-radius:var(--pill);background:none;cursor:pointer;font-size:12px;color:var(--muted);transition:all .12s}
+.fb:hover{color:var(--text);border-color:var(--muted)}
+.fb.on{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600}
+.bubble-row{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.divider{height:1px;background:var(--border);margin:10px 0}
+
+/* ── RECENT ── */
+#recent-bar{display:flex;gap:6px;align-items:center;padding:10px 0;overflow-x:auto;margin-bottom:14px;border-bottom:1px solid var(--border)}
+.r-label{font-size:11px;color:var(--muted);white-space:nowrap;text-transform:uppercase;letter-spacing:.5px}
+.r-pill{padding:4px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--pill);cursor:pointer;font-size:12px;white-space:nowrap;color:var(--text);transition:all .12s}
+.r-pill:hover{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+
+/* ── CHIPS ── */
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:var(--pill);font-size:11px;font-weight:600;white-space:nowrap}
+.chip.active{background:var(--green-bg);color:var(--green);border:1px solid rgba(48,209,88,.25)}
+.chip.paused{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(255,214,10,.25)}
+.chip.done{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.chip.using{background:var(--green-bg);color:var(--green);border:1px solid rgba(48,209,88,.25)}
+.chip.want-to-try{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(77,166,255,.25)}
+.chip.archived{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.chip.tag{background:var(--surface2);color:var(--muted);border:1px solid var(--border);font-weight:400}
+.chip.link{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(77,166,255,.2);cursor:pointer;text-decoration:none;font-weight:500}
+.chip.link:hover{background:rgba(77,166,255,.22)}
+.chip.api-chip{background:rgba(255,214,10,.1);color:var(--yellow);border:1px solid rgba(255,214,10,.2);font-weight:500;cursor:pointer}
+.chip.drive{background:rgba(48,209,88,.1);color:var(--green);border:1px solid rgba(48,209,88,.2)}
+.chip.nodrive{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+
+/* ── PLATFORM CHIPS ── */
+.plat{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:var(--pill);font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer;text-decoration:none;border:1px solid transparent}
+.plat.twitter{background:rgba(0,0,0,.6);color:#fff;border-color:#333}
+.plat.instagram{background:rgba(225,48,108,.15);color:#e1306c;border-color:rgba(225,48,108,.3)}
+.plat.linkedin{background:rgba(0,119,181,.15);color:#4da6ff;border-color:rgba(0,119,181,.3)}
+.plat.tiktok{background:rgba(105,201,208,.12);color:#69c9d0;border-color:rgba(105,201,208,.25)}
+.plat.github{background:rgba(139,92,246,.12);color:#a78bfa;border-color:rgba(139,92,246,.25)}
+.plat.reddit{background:rgba(255,69,0,.12);color:#ff6b35;border-color:rgba(255,69,0,.25)}
+.plat.producthunt{background:rgba(218,85,47,.12);color:#f97316;border-color:rgba(218,85,47,.25)}
+.plat.devto{background:rgba(59,73,223,.12);color:#818cf8;border-color:rgba(59,73,223,.25)}
+.plat.supabase{background:rgba(62,207,142,.12);color:#3ecf8e;border-color:rgba(62,207,142,.25)}
+.plat.stripe{background:rgba(99,91,255,.12);color:#7c71ff;border-color:rgba(99,91,255,.25)}
+.plat.tally{background:rgba(255,255,255,.07);color:#e0e0e0;border-color:rgba(255,255,255,.15)}
+.plat-add{background:var(--surface2);color:var(--muted);border:1px dashed var(--border)}
+.plat-picker{display:flex;gap:6px;flex-wrap:wrap;padding:8px 0}
+
+/* ── PROJECT GRID ── */
+.pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.pc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:11px;transition:border-color .15s}
+.pc:hover{border-color:var(--muted)}
+.pc.active{border-top:2px solid var(--green)}
+.pc.paused{border-top:2px solid var(--yellow)}
+.pc.done{border-top:2px solid var(--border)}
+.card-head{display:flex;align-items:flex-start;gap:8px}
+.card-name{font-weight:700;font-size:15px;flex:1;cursor:pointer;transition:color .12s}
+.card-name:hover{color:var(--accent)}
+.card-meta{font-size:11px;color:var(--muted)}
+.prog{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:var(--green);border-radius:2px;transition:width .4s}
+
+/* ── CHECKLIST ── */
+.cl{display:flex;flex-direction:column;gap:5px}
+.cli{display:flex;align-items:center;gap:7px;font-size:13px;padding:2px 0}
+.cli input[type=checkbox]{cursor:pointer;accent-color:var(--accent);flex-shrink:0;width:14px;height:14px}
+.cli.done span{text-decoration:line-through;color:var(--muted)}
+.cl-add{display:flex;gap:6px;margin-top:4px}
+.cl-add input{flex:1;padding:5px 10px;border:1px solid var(--border);border-radius:var(--pill);font-size:12px;outline:none;background:var(--surface2)}
+.cl-add input:focus{border-color:var(--accent)}
+textarea.notes{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--rs);font-size:12px;resize:vertical;min-height:50px;font-family:inherit;outline:none;background:var(--surface2);color:var(--text)}
+textarea.notes:focus{border-color:var(--accent)}
+textarea.notes::placeholder{color:var(--muted)}
+.mono-row{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:7px 10px;font-family:monospace;font-size:12px}
+.mono-row span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+
+/* ── API ── */
+.ag{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.ac{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:9px}
+.key-row{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:7px 10px}
+.key-val{flex:1;font-family:monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+
+/* ── SOCIAL ── */
+.social-layout{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.social-platform-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px}
+.plat-header{display:flex;align-items:center;gap:10px}
+.plat-icon-big{font-size:22px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;flex-shrink:0}
+.plat-icon-big.twitter{background:rgba(0,0,0,.6);border:1px solid #333}
+.plat-icon-big.instagram{background:rgba(225,48,108,.15);border:1px solid rgba(225,48,108,.3)}
+.plat-icon-big.linkedin{background:rgba(0,119,181,.15);border:1px solid rgba(0,119,181,.3)}
+.plat-icon-big.tiktok{background:rgba(105,201,208,.12);border:1px solid rgba(105,201,208,.25)}
+.plat-icon-big.github{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25)}
+.plat-icon-big.reddit{background:rgba(255,69,0,.12);border:1px solid rgba(255,69,0,.25)}
+.plat-icon-big.producthunt{background:rgba(218,85,47,.12);border:1px solid rgba(218,85,47,.25)}
+.plat-icon-big.devto{background:rgba(59,73,223,.12);border:1px solid rgba(59,73,223,.25)}
+.plat-icon-big.supabase{background:rgba(62,207,142,.12);border:1px solid rgba(62,207,142,.25)}
+.plat-icon-big.stripe{background:rgba(99,91,255,.12);border:1px solid rgba(99,91,255,.25)}
+.plat-icon-big.tally{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15)}
+.plat-name{font-weight:700;font-size:14px}
+.plat-sub{font-size:11px;color:var(--muted)}
+.connected-projects{display:flex;gap:5px;flex-wrap:wrap}
+.proj-bubble{padding:4px 11px;border-radius:var(--pill);font-size:12px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .12s;color:var(--text)}
+.proj-bubble:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+.no-conn{font-size:12px;color:var(--muted);font-style:italic}
+
+/* ── ASSETS ── */
+.drop-zone{border:2px dashed var(--border);border-radius:var(--r);padding:28px;text-align:center;color:var(--muted);cursor:pointer;margin-bottom:14px;font-size:13px;transition:all .15s}
+.drop-zone:hover,.drop-zone.over{border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
+.asset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.asset-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.asset-thumb{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:var(--surface2)}
+.asset-icon{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:32px;background:var(--surface2);color:var(--muted)}
+.asset-info{padding:8px 10px;font-size:11px}
+.asset-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:5px;font-size:12px;color:var(--text)}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;overflow-y:auto;padding:16px}
+.overlay.on{display:flex;align-items:flex-start;justify-content:center}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;width:100%;max-width:600px;margin:auto}
+.modal.wide{max-width:740px}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:16px}
+.mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+
+/* ── FORMS ── */
+.fg{margin-bottom:13px}
+.fg label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+.fg input,.fg select,.fg textarea{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:var(--rs);font-size:13px;font-family:inherit;outline:none;background:var(--surface2);color:var(--text)}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--accent)}
+.fg input::placeholder,.fg textarea::placeholder{color:var(--muted)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+select option{background:var(--surface2);color:var(--text)}
+.ler{display:grid;grid-template-columns:150px 1fr auto;gap:6px;align-items:center;margin-bottom:7px}
+.ler select,.ler input{padding:7px 9px;border:1px solid var(--border);border-radius:var(--rs);font-size:12px;outline:none;width:100%;background:var(--surface2);color:var(--text)}
+.ler select:focus,.ler input:focus{border-color:var(--accent)}
+
+/* ── MEMORY ── */
+textarea.mem{width:100%;height:300px;font-family:monospace;font-size:12px;padding:12px;border:1px solid var(--border);border-radius:var(--rs);resize:vertical;outline:none;background:var(--surface2);color:var(--text);line-height:1.6}
+textarea.mem:focus{border-color:var(--accent)}
+
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty p{margin-bottom:12px;font-size:13px}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:var(--pill);font-size:13px;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+#toast.on{opacity:1}
+
+/* ── PATH DROP ── */
+#path-drop-zone{border:2px dashed var(--border);border-radius:var(--rs);padding:3px 4px;transition:all .15s}
+
+@media(max-width:600px){
+  main{padding:10px}
+  .pg,.ag,.social-layout{grid-template-columns:1fr}
+  .frow{grid-template-columns:1fr}
+  nav button{padding:10px 12px;font-size:12px}
+  .ler{grid-template-columns:1fr auto;grid-template-rows:auto auto}
+  .ler select{grid-column:1/-1}
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">DEV HUB</div>
+    <div class="login-sub">Your personal dev workspace</div>
+    <div class="login-tabs">
+      <button class="login-tab on" id="lt-signin" onclick="setLoginTab('signin')">Sign In</button>
+      <button class="login-tab" id="lt-signup" onclick="setLoginTab('signup')">Create Account</button>
+    </div>
+    <div class="fg" style="margin:0"><label>Email</label><input id="login-email" type="email" placeholder="you@email.com" onkeydown="if(event.key==='Enter')doAuth()"></div>
+    <div class="fg" style="margin:0"><label>Password</label><input id="login-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAuth()"></div>
+    <div class="login-err" id="login-err"></div>
+    <button class="btn primary" style="width:100%;justify-content:center;padding:10px" onclick="doAuth()" id="auth-btn">Sign In</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+
+<div id="hdr">
+  <div class="app-name">DEV HUB</div>
+  <div class="sw">
+    <input id="gs" type="text" placeholder="Search everything…" autocomplete="off">
+    <div id="sd"></div>
+  </div>
+  <button class="btn primary sm" onclick="openProjModal()">+ Project</button>
+  <span id="sync-dot" title="Synced"></span>
+  <button class="btn xs ghost" onclick="doLogout()" title="Sign out" style="color:var(--muted);font-size:12px">⏏</button>
+</div>
+
+<nav id="nav">
+  <button class="on" data-tab="projects">Projects</button>
+  <button data-tab="apis">API Keys</button>
+  <button data-tab="assets">Assets</button>
+  <button data-tab="social">Social</button>
+</nav>
+
+<main>
+
+<div id="tab-projects" class="tab on">
+  <div id="recent-bar"><span class="r-label">Recent</span><span style="font-size:12px;color:var(--muted)">None yet</span></div>
+  <div class="sh">
+    <span class="sh-title">Projects</span>
+    <div class="filters" style="margin:0">
+      <button class="fb on" data-pf="all">All</button>
+      <button class="fb" data-pf="active">Active</button>
+      <button class="fb" data-pf="paused">Paused</button>
+      <button class="fb" data-pf="done">Done</button>
+    </div>
+  </div>
+  <div class="pg" id="pgrid"></div>
+</div>
+
+<div id="tab-apis" class="tab">
+  <div class="sh">
+    <span class="sh-title">API Keys</span>
+    <button class="btn primary sm" onclick="openAPIModal()">+ Add Key</button>
+  </div>
+  <div class="filters">
+    <button class="fb on" data-af="all">All</button>
+    <button class="fb" data-af="using">Using</button>
+    <button class="fb" data-af="want-to-try">Want to Try</button>
+    <button class="fb" data-af="archived">Archived</button>
+    <input id="api-search" type="text" placeholder="Search…" style="margin-left:auto;padding:5px 12px;border:1px solid var(--border);border-radius:var(--pill);font-size:12px;outline:none;width:160px;background:var(--surface2);color:var(--text)">
+  </div>
+  <div class="ag" id="agrid"></div>
+</div>
+
+<div id="tab-assets" class="tab">
+  <div class="sh">
+    <span class="sh-title">Assets</span>
+    <select id="asset-proj-filter" style="padding:6px 12px;border:1px solid var(--border);border-radius:var(--pill);font-size:13px;outline:none;background:var(--surface2);color:var(--text)">
+      <option value="all">All Projects</option>
+    </select>
+  </div>
+  <div class="drop-zone" id="drop-zone">
+    Drop files here or <strong>click to upload</strong><br>
+    <span style="font-size:12px">Max 5MB per file · Images preview inline</span>
+    <input type="file" id="file-input" multiple style="display:none">
+  </div>
+  <div class="asset-grid" id="asset-grid"></div>
+</div>
+
+<div id="tab-social" class="tab">
+  <div class="sh">
+    <span class="sh-title">Social & Tools</span>
+    <span style="font-size:12px;color:var(--muted)">Connected projects shown under each platform</span>
+  </div>
+  <div class="social-layout" id="social-grid"></div>
+</div>
+
+</main>
+
+<!-- PROJECT MODAL -->
+<div class="overlay" id="proj-modal">
+  <div class="modal">
+    <div class="modal-title" id="proj-modal-title">New Project</div>
+    <input type="hidden" id="pm-id">
+    <div class="frow">
+      <div class="fg"><label>Name</label><input id="pm-name" placeholder="my-app"></div>
+      <div class="fg"><label>Status</label>
+        <select id="pm-status"><option value="active">Active</option><option value="paused">Paused</option><option value="done">Done</option></select>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Local Path (for Claude Code)</label>
+      <div id="path-drop-zone">
+        <input id="pm-path" placeholder="Type path or drag your project folder here…" style="border:none;background:none;width:100%;outline:none;padding:4px 6px;color:var(--text);font-size:13px">
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Drag any file or folder from your project — path fills automatically</div>
+    </div>
+    <div class="fg">
+      <label style="display:flex;align-items:center;justify-content:space-between;text-transform:uppercase;letter-spacing:.4px;font-size:11px">
+        <span>Links</span>
+        <button type="button" class="btn xs" onclick="addLinkRow()">+ Add Link</button>
+      </label>
+      <div id="pm-links" style="margin-top:8px"></div>
+    </div>
+    <div class="fg">
+      <label>Social & Tool Connections</label>
+      <div class="plat-picker" id="pm-socials"></div>
+    </div>
+    <div class="fg"><label>Tags (comma-separated)</label><input id="pm-tags" placeholder="web app, api, tool"></div>
+    <div class="fg"><label>Goal / Description</label><textarea id="pm-goal" rows="2" placeholder="What does this project do?"></textarea></div>
+    <div class="mfoot">
+      <button class="btn" onclick="closeModal('proj-modal')">Cancel</button>
+      <button class="btn primary" onclick="saveProject()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- API MODAL -->
+<div class="overlay" id="api-modal">
+  <div class="modal">
+    <div class="modal-title" id="api-modal-title">Add API Key</div>
+    <input type="hidden" id="am-id">
+    <div class="frow">
+      <div class="fg"><label>Service Name</label><input id="am-name" placeholder="OpenAI, Stripe…"></div>
+      <div class="fg"><label>Status</label>
+        <select id="am-status"><option value="using">Currently Using</option><option value="want-to-try">Want to Try</option><option value="archived">Archived</option></select>
+      </div>
+    </div>
+    <div class="fg"><label>API Key</label><input id="am-key" type="text" placeholder="sk-…" autocomplete="off"></div>
+    <div class="frow">
+      <div class="fg"><label>Project</label><select id="am-proj"><option value="">— None —</option></select></div>
+      <div class="fg"><label>Tags</label><input id="am-tags" placeholder="ai, payments"></div>
+    </div>
+    <div class="fg"><label>Notes</label><textarea id="am-notes" rows="2"></textarea></div>
+    <div class="mfoot">
+      <button class="btn" onclick="closeModal('api-modal')">Cancel</button>
+      <button class="btn primary" onclick="saveAPI()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="overlay" id="detail-modal">
+  <div class="modal wide">
+    <div id="detail-body"></div>
+    <div class="mfoot"><button class="btn" onclick="closeModal('detail-modal')">Close</button></div>
+  </div>
+</div>
+
+</div><!-- /#app -->
+
+<div id="toast"></div>
+
+<script>
+// ── SUPABASE ──────────────────────────────────────────
+const SUPA_URL = 'https://pnzwfnlegeadzzozwfvj.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuendmbmxlZ2VhZHp6b3p3ZnZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MjcwMzksImV4cCI6MjA5MzQwMzAzOX0.thHhY21xKWi3gZ4L6leP5_WK1ft_7HfXznVxaH2O56o';
+let supa;
+try { supa = supabase.createClient(SUPA_URL, SUPA_KEY); } catch(e) {}
+
+// ── AUTH ──────────────────────────────────────────────
+let currentUser = null;
+let loginMode = 'signin';
+
+function setLoginTab(mode) {
+  loginMode = mode;
+  document.getElementById('lt-signin').classList.toggle('on', mode==='signin');
+  document.getElementById('lt-signup').classList.toggle('on', mode==='signup');
+  document.getElementById('auth-btn').textContent = mode==='signin' ? 'Sign In' : 'Create Account';
+  document.getElementById('login-err').textContent = '';
+}
+
+async function doAuth() {
+  const errEl = document.getElementById('login-err');
+  errEl.style.color = 'var(--red)';
+  if (!supa) {
+    errEl.textContent = '⚠ Open via GitHub Pages or a local server (not file://) — your browser blocks external scripts from local files.';
+    return;
+  }
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  if (!email || !pass) { errEl.textContent = 'Email and password required'; return; }
+  const btn = document.getElementById('auth-btn');
+  btn.textContent = '…'; btn.disabled = true; errEl.textContent = '';
+  try {
+    const { error } = loginMode === 'signin'
+      ? await supa.auth.signInWithPassword({email, password: pass})
+      : await supa.auth.signUp({email, password: pass});
+    btn.disabled = false;
+    btn.textContent = loginMode === 'signin' ? 'Sign In' : 'Create Account';
+    if (error) { errEl.textContent = error.message; return; }
+    if (loginMode === 'signup') {
+      errEl.style.color = 'var(--green)';
+      errEl.textContent = '✓ Check your email to confirm, then sign in.';
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = loginMode === 'signin' ? 'Sign In' : 'Create Account';
+    errEl.textContent = 'Error: ' + e.message;
+  }
+}
+
+async function doLogout() {
+  if (supa) await supa.auth.signOut();
+  DB = {projects:[], apis:[]};
+  showLogin();
+}
+
+function showLogin() {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').classList.remove('off');
+}
+function showApp() {
+  document.getElementById('login-screen').classList.add('off');
+  document.getElementById('app').style.display = 'block';
+}
+
+function syncStatus(s) {
+  const d = document.getElementById('sync-dot');
+  d.className = s==='ok' ? '' : s;
+  d.title = s==='ok' ? 'Synced' : s==='syncing' ? 'Saving…' : 'Sync error';
+}
+
+// ── CACHE + SUPABASE DATA ─────────────────────────────
+let DB = {projects:[], apis:[]};
+
+async function loadData() {
+  const uid = currentUser.id;
+  const [{data:p},{data:a}] = await Promise.all([
+    supa.from('projects').select('data').eq('user_id',uid),
+    supa.from('apis').select('data').eq('user_id',uid),
+  ]);
+  DB.projects = (p||[]).map(r=>r.data);
+  DB.apis = (a||[]).map(r=>r.data);
+}
+
+async function pushProject(p) {
+  if (!currentUser||!supa) return;
+  syncStatus('syncing');
+  const {error} = await supa.from('projects').upsert({id:p.id,user_id:currentUser.id,data:p,updated_at:new Date().toISOString()});
+  syncStatus(error?'error':'ok');
+}
+
+async function pushAPI(a) {
+  if (!currentUser||!supa) return;
+  syncStatus('syncing');
+  const {error} = await supa.from('apis').upsert({id:a.id,user_id:currentUser.id,data:a});
+  syncStatus(error?'error':'ok');
+}
+
+async function removeProjectDB(pid) { if(currentUser&&supa) await supa.from('projects').delete().eq('id',pid); }
+async function removeAPIDB(aid)     { if(currentUser&&supa) await supa.from('apis').delete().eq('id',aid); }
+
+async function migrateIfNeeded() {
+  const lsp = (()=>{try{return JSON.parse(localStorage.getItem('dh_proj')||'null')}catch{return null}})();
+  const lsa = (()=>{try{return JSON.parse(localStorage.getItem('dh_api')||'null')}catch{return null}})();
+  if ((!lsp?.length&&!lsa?.length)||DB.projects.length>0) return;
+  if (!confirm(`Found ${lsp?.length||0} projects and ${lsa?.length||0} API keys locally. Import to Supabase?`)) return;
+  const uid = currentUser.id;
+  if (lsp?.length) { await supa.from('projects').upsert(lsp.map(p=>({id:p.id,user_id:uid,data:p,updated_at:new Date().toISOString()}))); DB.projects=lsp; }
+  if (lsa?.length) { await supa.from('apis').upsert(lsa.map(a=>({id:a.id,user_id:uid,data:a}))); DB.apis=lsa; }
+  localStorage.removeItem('dh_proj'); localStorage.removeItem('dh_api');
+  toast('✓ Local data imported to Supabase');
+}
+
+const getProjects = () => DB.projects;
+const setProjects = ps => { DB.projects = ps; };
+const getAPIs     = () => DB.apis;
+const setAPIs     = as => { DB.apis = as; };
+const getAssets   = () => { try{return JSON.parse(localStorage.getItem('dh_assets')||'[]')}catch{return []} };
+const setAssets   = v  => localStorage.setItem('dh_assets',JSON.stringify(v));
+const getRecent   = () => { try{return JSON.parse(localStorage.getItem('dh_recent')||'[]')}catch{return []} };
+const setRecent   = v  => localStorage.setItem('dh_recent',JSON.stringify(v));
+
+// ── UTILS ─────────────────────────────────────────────
+const uid  = () => Date.now().toString(36)+Math.random().toString(36).slice(2);
+const now  = () => new Date().toISOString();
+const rel  = iso => {
+  if (!iso) return 'Never';
+  const s=(Date.now()-new Date(iso))/1000;
+  if(s<60)return 'Just now';if(s<3600)return Math.floor(s/60)+'m ago';
+  if(s<86400)return Math.floor(s/3600)+'h ago';if(s<604800)return Math.floor(s/86400)+'d ago';
+  return new Date(iso).toLocaleDateString();
+};
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const js  = JSON.stringify;
+
+// ── TOAST ─────────────────────────────────────────────
+let _tt;
+const toast = msg => {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('on');
+  clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove('on'),2200);
+};
+const copy = (text,label) => navigator.clipboard.writeText(text).then(()=>toast('Copied'+(label?': '+label:'')));
+
+// ── MODALS ────────────────────────────────────────────
+const openModal  = id => { document.getElementById(id).classList.add('on'); document.body.style.overflow='hidden'; if(id==='proj-modal') setTimeout(initPathDrop,50); };
+const closeModal = id => { document.getElementById(id).classList.remove('on'); document.body.style.overflow=''; };
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id)}));
+
+// ── TABS ──────────────────────────────────────────────
+let curTab = 'projects';
+document.getElementById('nav').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-tab]');
+  if (!btn) return;
+  curTab = btn.dataset.tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));
+  document.getElementById('tab-'+curTab).classList.add('on');
+  btn.classList.add('on');
+  if (curTab==='assets') populateAssetProjFilter();
+  if (curTab==='social') renderSocial();
+});
+
+// ── PLATFORMS ─────────────────────────────────────────
+const PLATFORMS = [
+  {id:'twitter',    name:'X / Twitter',  icon:'𝕏',  url:'https://twitter.com/intent/tweet',  postLabel:'New Tweet',  group:'social'},
+  {id:'instagram',  name:'Instagram',    icon:'📸', url:'https://www.instagram.com/',         postLabel:'Open App',   group:'social'},
+  {id:'linkedin',   name:'LinkedIn',     icon:'💼', url:'https://www.linkedin.com/feed/',     postLabel:'Open Feed',  group:'social'},
+  {id:'tiktok',     name:'TikTok',       icon:'🎵', url:'https://www.tiktok.com/upload',      postLabel:'Upload',     group:'social'},
+  {id:'github',     name:'GitHub',       icon:'⚙️', url:'https://github.com/',               postLabel:'Dashboard',  group:'social'},
+  {id:'reddit',     name:'Reddit',       icon:'🔴', url:'https://www.reddit.com/submit',      postLabel:'New Post',   group:'social'},
+  {id:'producthunt',name:'Product Hunt', icon:'🚀', url:'https://www.producthunt.com/',       postLabel:'Open',       group:'social'},
+  {id:'devto',      name:'Dev.to',       icon:'📝', url:'https://dev.to/new',                 postLabel:'New Post',   group:'social'},
+  {id:'supabase',   name:'Supabase',     icon:'⚡', url:'https://supabase.com/dashboard',     postLabel:'Dashboard',  group:'tools'},
+  {id:'stripe',     name:'Stripe',       icon:'💳', url:'https://dashboard.stripe.com/',      postLabel:'Dashboard',  group:'tools'},
+  {id:'tally',      name:'Tally.so',     icon:'📋', url:'https://tally.so/forms',             postLabel:'My Forms',   group:'tools'},
+];
+const platMap = Object.fromEntries(PLATFORMS.map(p=>[p.id,p]));
+
+// ── PROJECT FILTERS ───────────────────────────────────
+let pFilter = 'all';
+document.querySelectorAll('[data-pf]').forEach(b=>b.addEventListener('click',()=>{
+  pFilter=b.dataset.pf;
+  document.querySelectorAll('[data-pf]').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); renderProjects();
+}));
+
+// ── LINK EDITOR ───────────────────────────────────────
+const LINK_PRESETS = ['GitHub','GitHub (frontend)','GitHub (backend)','Google Drive','Vercel','Netlify','Supabase','Notion','Linear','Figma','Railway','Render','Fly.io','Cloudflare','Custom…'];
+let _editLinks = [];
+
+function renderLinkEditor() {
+  const c = document.getElementById('pm-links');
+  if (!c) return;
+  if (!_editLinks.length) { c.innerHTML='<div style="font-size:12px;color:var(--muted);padding:4px 0">No links yet.</div>'; return; }
+  c.innerHTML = _editLinks.map((lnk,i) => {
+    const isCustom = !LINK_PRESETS.slice(0,-1).includes(lnk.label);
+    return `<div class="ler">
+      <select onchange="onLinkLabelChange(${i},this.value)">
+        ${LINK_PRESETS.map(p=>`<option value="${esc(p)}" ${(isCustom&&p==='Custom...')||lnk.label===p?'selected':''}>${esc(p)}</option>`).join('')}
+      </select>
+      ${isCustom?`<input placeholder="Label" value="${esc(lnk.label)}" oninput="_editLinks[${i}].label=this.value" style="grid-column:1/2;grid-row:2">`:''}
+      <input placeholder="https://…" value="${esc(lnk.url)}" oninput="_editLinks[${i}].url=this.value" ${isCustom?'style="grid-column:2/3;grid-row:2"':''}>
+      <button type="button" class="btn xs danger" onclick="removeLinkRow(${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+function onLinkLabelChange(i,val){ _editLinks[i].label=val==='Custom…'?'':val; renderLinkEditor(); }
+function addLinkRow(){ _editLinks.push({id:uid(),label:'GitHub',url:''}); renderLinkEditor(); }
+function removeLinkRow(i){ _editLinks.splice(i,1); renderLinkEditor(); }
+function collectLinks() {
+  const c=document.getElementById('pm-links');
+  if(!c) return _editLinks;
+  c.querySelectorAll('.ler').forEach((row,i)=>{
+    if(!_editLinks[i]) return;
+    const inputs=row.querySelectorAll('input'), sel=row.querySelector('select');
+    const sv=sel?sel.value:'';
+    if(sv==='Custom…'||sv===''){
+      if(inputs[0])_editLinks[i].label=inputs[0].value;
+      if(inputs[1])_editLinks[i].url=inputs[1].value;
+    } else { _editLinks[i].label=sv; if(inputs[inputs.length-1])_editLinks[i].url=inputs[inputs.length-1].value; }
+  });
+  return _editLinks.filter(l=>l.url.trim());
+}
+
+// ── PLATFORM PICKER ───────────────────────────────────
+let _editSocials = [];
+function renderPlatPicker() {
+  const c=document.getElementById('pm-socials');
+  if(!c) return;
+  c.innerHTML=PLATFORMS.map(p=>{
+    const on=_editSocials.includes(p.id);
+    return `<button type="button" class="plat ${p.id}" onclick="togglePlatPicker(${js(p.id)})" style="opacity:${on?1:.45};border-style:${on?'solid':'dashed'}">${p.icon} ${p.name}</button>`;
+  }).join('');
+}
+function togglePlatPicker(pid){
+  if(_editSocials.includes(pid)) _editSocials=_editSocials.filter(x=>x!==pid);
+  else _editSocials.push(pid);
+  renderPlatPicker();
+}
+
+// ── MEMORY TEMPLATE ───────────────────────────────────
+const memTemplate = p => `# Project: ${p.name}
+
+## Goal
+${p.goal||'What this project does in plain language.'}
+
+## Current Status
+- Overall: ${p.status.charAt(0).toUpperCase()+p.status.slice(1)}
+- Last worked on: ${new Date().toLocaleDateString()}
+
+## What's Done
+-
+
+## What's Left
+-
+
+## Decisions Made
+-
+
+## File Structure
+${p.path||'project-folder/'}/
+├── index.html
+└── ${p.name.toLowerCase().replace(/\s+/g,'-')}.md
+
+## Links
+${(p.links||[]).map(l=>`- ${l.label}: ${l.url}`).join('\n')||'-'}
+
+## APIs & Keys
+| API | Status | Notes |
+|-----|--------|-------|
+
+## Key Code Snippets
+\`\`\`js
+
+\`\`\`
+
+## Notes
+`;
+
+// ── RENDER PROJECTS ───────────────────────────────────
+function renderProjects(searchQ) {
+  let projects = getProjects();
+  if (pFilter!=='all') projects=projects.filter(p=>p.status===pFilter);
+  if (searchQ) {
+    const q=searchQ.toLowerCase();
+    projects=projects.filter(p=>[p.name,p.goal||'',p.notes||'',...(p.tags||[])].some(s=>s.toLowerCase().includes(q)));
+  }
+  projects.sort((a,b)=>(b.lastOpened||b.lastUpdated||'').localeCompare(a.lastOpened||a.lastUpdated||''));
+  const grid=document.getElementById('pgrid');
+  grid.innerHTML='';
+  if (!projects.length) {
+    grid.innerHTML=`<div class="empty" style="grid-column:1/-1"><p>No projects yet.</p><button class="btn primary" onclick="openProjModal()">+ Add First Project</button></div>`;
+    return;
+  }
+  const allAPIs=getAPIs();
+  projects.forEach(p=>{
+    const cl=p.checklist||[], done=cl.filter(i=>i.done).length, pct=cl.length?Math.round(done/cl.length*100):0;
+    const links=p.links||[], socials=p.socials||[], projAPIs=allAPIs.filter(a=>a.projectId===p.id);
+    const hasDrive=links.some(l=>l.label.toLowerCase().includes('drive'));
+    const clHtml=cl.slice(0,3).map(i=>`<div class="cli${i.done?' done':''}"><input type="checkbox" ${i.done?'checked':''} onchange="toggleCheck(${js(p.id)},${js(i.id)},this.checked)"><span>${esc(i.text)}</span></div>`).join('')+
+      (cl.length>3?`<button class="btn xs ghost" style="margin-top:2px;font-size:11px" onclick="openDetail(${js(p.id)})">+${cl.length-3} more</button>`:'')+
+      `<div class="cl-add"><input id="ci-${p.id}" placeholder="Add item…" onkeydown="if(event.key==='Enter')addCheckItem(${js(p.id)})"><button class="btn xs" onclick="addCheckItem(${js(p.id)})">Add</button></div>`;
+    const card=document.createElement('div');
+    card.className=`pc ${p.status}`; card.id='pc-'+p.id;
+    card.innerHTML=`
+      <div class="card-head"><div class="card-name" onclick="openDetail(${js(p.id)})">${esc(p.name)}</div><span class="chip ${p.status}">${p.status}</span></div>
+      <div class="card-meta">🕐 ${rel(p.lastUpdated)}${cl.length?` · ${done}/${cl.length} done`:''}</div>
+      ${(p.tags||[]).length||hasDrive?`<div class="bubble-row">${(p.tags||[]).map(t=>`<span class="chip tag">${esc(t)}</span>`).join('')}<span class="chip ${hasDrive?'drive':'nodrive'}">${hasDrive?'✓ Drive':'○ Drive'}</span></div>`:''}
+      ${links.length?`<div class="bubble-row">${links.map(l=>`<a class="chip link" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join('')}</div>`:''}
+      ${socials.length?`<div class="bubble-row">${socials.map(sid=>{const pl=platMap[sid];return pl?`<a class="plat ${sid}" href="${esc(pl.url)}" target="_blank" rel="noopener">${pl.icon} ${pl.name}</a>`:''}).join('')}</div>`:''}
+      ${projAPIs.length?`<div class="bubble-row">${projAPIs.map(a=>`<span class="chip api-chip" title="Click to copy" onclick="copy(${js(a.key||'')},'${esc(a.name)}')">${esc(a.name)}</span>`).join('')}</div>`:''}
+      ${p.path?`<div class="mono-row"><span>claude "${esc(p.path)}"</span><button class="btn xs" onclick="copy(${js('claude "'+p.path+'"')},'command')">copy</button></div>`:''}
+      ${cl.length?`<div><div class="prog"><div class="prog-fill" style="width:${pct}%"></div></div><div class="cl" style="margin-top:6px">${clHtml}</div></div>`:`<div class="cl">${clHtml}</div>`}
+      <textarea class="notes" placeholder="Quick notes…" onblur="saveNotes(${js(p.id)},this.value)">${esc(p.notes||'')}</textarea>
+      <div class="bubble-row">
+        <button class="btn sm primary" onclick="openDetail(${js(p.id)})">Open</button>
+        <button class="btn sm" onclick="editProject(${js(p.id)})">Edit</button>
+        <button class="btn sm" onclick="downloadMem(${js(p.id)})">↓ .md</button>
+        <button class="btn sm danger" onclick="deleteProject(${js(p.id)})">Delete</button>
+      </div>`;
+    grid.appendChild(card);
+  });
+  renderRecent();
+}
+
+// ── SOCIAL TAB ────────────────────────────────────────
+function renderSocial() {
+  const projects=getProjects(), grid=document.getElementById('social-grid');
+  grid.innerHTML='';
+  [{key:'social',label:'Social Media'},{key:'tools',label:'Dev Tools'}].forEach(group=>{
+    const platforms=PLATFORMS.filter(pl=>pl.group===group.key);
+    const h=document.createElement('div');
+    h.style.cssText='grid-column:1/-1;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;padding:4px 0 2px';
+    h.textContent=group.label; grid.appendChild(h);
+    platforms.forEach(pl=>{
+      const connected=projects.filter(p=>(p.socials||[]).includes(pl.id));
+      const card=document.createElement('div');
+      card.className='social-platform-card';
+      card.innerHTML=`
+        <div class="plat-header">
+          <div class="plat-icon-big ${pl.id}">${pl.icon}</div>
+          <div><div class="plat-name">${esc(pl.name)}</div><div class="plat-sub">${esc(pl.postLabel)}</div></div>
+          <a class="btn sm primary" href="${esc(pl.url)}" target="_blank" rel="noopener" style="margin-left:auto">Open →</a>
+        </div>
+        <div class="divider"></div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Connected Projects</div>
+        <div class="connected-projects">
+          ${connected.length?connected.map(p=>`<button class="proj-bubble" onclick="openDetail(${js(p.id)})">${esc(p.name)}</button>`).join(''):'<span class="no-conn">No projects connected. Edit a project to link it here.</span>'}
+        </div>`;
+      grid.appendChild(card);
+    });
+  });
+}
+
+// ── CHECKLIST ─────────────────────────────────────────
+function toggleCheck(pid,iid,val){
+  const ps=getProjects(),p=ps.find(x=>x.id===pid); if(!p) return;
+  const item=p.checklist.find(i=>i.id===iid);
+  if(item){item.done=val;p.lastUpdated=now();setProjects(ps);renderProjects();pushProject(p);}
+}
+function addCheckItem(pid){
+  const el=document.getElementById('ci-'+pid),text=el?el.value.trim():''; if(!text) return;
+  const ps=getProjects(),p=ps.find(x=>x.id===pid); if(!p) return;
+  if(!p.checklist)p.checklist=[];
+  p.checklist.push({id:uid(),text,done:false}); p.lastUpdated=now();
+  setProjects(ps); renderProjects(); pushProject(p);
+}
+function saveNotes(pid,val){
+  const ps=getProjects(),p=ps.find(x=>x.id===pid);
+  if(p){p.notes=val;p.lastUpdated=now();setProjects(ps);pushProject(p);}
+}
+
+// ── RECENT ────────────────────────────────────────────
+function renderRecent(){
+  const recent=getRecent(),projects=getProjects(),bar=document.getElementById('recent-bar');
+  bar.innerHTML='<span class="r-label">Recent</span>';
+  const hits=recent.map(id=>projects.find(p=>p.id===id)).filter(Boolean).slice(0,8);
+  if(!hits.length){bar.innerHTML+='<span style="font-size:12px;color:var(--muted)">None yet</span>';return;}
+  hits.forEach(p=>{const pill=document.createElement('button');pill.className='r-pill';pill.textContent=p.name;pill.onclick=()=>openDetail(p.id);bar.appendChild(pill);});
+}
+
+// ── DETAIL ────────────────────────────────────────────
+function openDetail(pid){
+  const ps=getProjects(),p=ps.find(x=>x.id===pid); if(!p) return;
+  let r=[pid,...getRecent().filter(x=>x!==pid)].slice(0,8);
+  setRecent(r); p.lastOpened=now(); setProjects(ps); renderRecent();
+  const apis=getAPIs().filter(a=>a.projectId===pid), cl=p.checklist||[], links=p.links||[], socials=p.socials||[];
+  document.getElementById('detail-body').innerHTML=`
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <div style="font-size:18px;font-weight:800;flex:1">${esc(p.name)}</div>
+      <span class="chip ${p.status}">${p.status}</span>
+      <button class="btn sm" onclick="editProject(${js(pid)});closeModal('detail-modal')">Edit</button>
+    </div>
+    ${p.goal?`<p style="color:var(--muted);font-size:13px;margin-bottom:14px">${esc(p.goal)}</p>`:''}
+    ${links.length?`<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px">Links</div><div class="bubble-row">${links.map(l=>`<div style="display:flex;align-items:center;gap:4px"><a class="chip link" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a><button class="btn xs" onclick="copy(${js(l.url)},${js(l.label)})">copy</button></div>`).join('')}</div></div>`:''}
+    ${socials.length?`<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px">Platforms</div><div class="bubble-row">${socials.map(sid=>{const pl=platMap[sid];return pl?`<a class="plat ${sid}" href="${esc(pl.url)}" target="_blank" rel="noopener">${pl.icon} ${pl.name}</a>`:''}).join('')}</div></div>`:''}
+    ${p.path?`<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Claude Code</div><div class="mono-row"><span>claude "${esc(p.path)}"</span><button class="btn xs" onclick="copy(${js('claude "'+p.path+'"')},'command')">copy</button></div></div>`:''}
+    ${apis.length?`<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px">API Keys</div>${apis.map(a=>`<div class="key-row" style="margin-bottom:6px"><span class="chip api-chip" style="flex-shrink:0">${esc(a.name)}</span><span class="key-val">${esc(a.key||'(no key)')}</span><button class="btn xs" onclick="copy(${js(a.key||'')},'${esc(a.name)}')">copy</button></div>`).join('')}</div>`:''}
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Checklist</div>
+    <div class="cl" style="margin-bottom:6px">
+      ${cl.map(i=>`<div class="cli${i.done?' done':''}"><input type="checkbox" ${i.done?'checked':''} onchange="toggleCheck(${js(pid)},${js(i.id)},this.checked);openDetail(${js(pid)})"><span>${esc(i.text)}</span><button class="btn xs ghost" style="margin-left:auto;color:var(--red)" onclick="deleteCheckItem(${js(pid)},${js(i.id)})">✕</button></div>`).join('')}
+    </div>
+    <div class="cl-add" style="margin-bottom:16px"><input id="dci-${pid}" placeholder="Add item…" onkeydown="if(event.key==='Enter')detailAddItem(${js(pid)})"><button class="btn sm" onclick="detailAddItem(${js(pid)})">Add</button></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Memory File (.md)</div>
+      <div style="display:flex;gap:6px"><button class="btn xs" onclick="copy(document.getElementById('mem-${pid}').value,'memory file')">Copy All</button><button class="btn xs" onclick="downloadMem(${js(pid)})">↓ Download</button></div>
+    </div>
+    <textarea class="mem" id="mem-${pid}" onblur="saveMem(${js(pid)},this.value)">${esc(p.memoryFile||memTemplate(p))}</textarea>
+    <p style="font-size:11px;color:var(--muted);margin-top:5px">Drop the .md into a new Claude chat to resume exactly where you left off.</p>`;
+  openModal('detail-modal');
+}
+
+function detailAddItem(pid){
+  const el=document.getElementById('dci-'+pid),text=el?el.value.trim():''; if(!text) return;
+  const ps=getProjects(),p=ps.find(x=>x.id===pid); if(!p) return;
+  if(!p.checklist)p.checklist=[];
+  p.checklist.push({id:uid(),text,done:false}); p.lastUpdated=now(); setProjects(ps); pushProject(p); openDetail(pid);
+}
+function deleteCheckItem(pid,iid){
+  const ps=getProjects(),p=ps.find(x=>x.id===pid); if(!p) return;
+  p.checklist=p.checklist.filter(i=>i.id!==iid); p.lastUpdated=now(); setProjects(ps); pushProject(p); openDetail(pid);
+}
+function saveMem(pid,val){
+  const ps=getProjects(),p=ps.find(x=>x.id===pid);
+  if(p){p.memoryFile=val;p.lastUpdated=now();setProjects(ps);pushProject(p);}
+}
+function downloadMem(pid){
+  const ps=getProjects(),p=ps.find(x=>x.id===pid); if(!p) return;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([p.memoryFile||memTemplate(p)],{type:'text/markdown'}));
+  a.download=p.name.toLowerCase().replace(/\s+/g,'-')+'.md'; a.click(); URL.revokeObjectURL(a.href);
+  toast('Downloaded '+a.download);
+}
+
+// ── PROJECT CRUD ──────────────────────────────────────
+function openProjModal(pid){
+  const p=pid?getProjects().find(x=>x.id===pid):null;
+  document.getElementById('proj-modal-title').textContent=p?'Edit Project':'New Project';
+  document.getElementById('pm-id').value=p?p.id:'';
+  document.getElementById('pm-name').value=p?p.name:'';
+  document.getElementById('pm-status').value=p?p.status:'active';
+  document.getElementById('pm-path').value=p?(p.path||''):'';
+  document.getElementById('pm-tags').value=p?(p.tags||[]).join(', '):'';
+  document.getElementById('pm-goal').value=p?(p.goal||''):'';
+  _editLinks=p?JSON.parse(JSON.stringify(p.links||[])):[];
+  _editSocials=p?JSON.parse(JSON.stringify(p.socials||[])):[];
+  renderLinkEditor(); renderPlatPicker(); openModal('proj-modal');
+}
+const editProject=pid=>openProjModal(pid);
+
+function saveProject(){
+  const id=document.getElementById('pm-id').value, name=document.getElementById('pm-name').value.trim();
+  if(!name){toast('Name required');return;}
+  const ps=getProjects(), existing=id?ps.find(p=>p.id===id):null;
+  const tags=document.getElementById('pm-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const data={name,status:document.getElementById('pm-status').value,path:document.getElementById('pm-path').value.trim(),links:collectLinks(),socials:[..._editSocials],tags,goal:document.getElementById('pm-goal').value.trim()};
+  if(existing){Object.assign(existing,data,{lastUpdated:now()});setProjects(ps);pushProject(existing);}
+  else{const p={id:uid(),checklist:[],notes:'',memoryFile:'',lastUpdated:now(),lastOpened:null,...data};p.memoryFile=memTemplate(p);ps.unshift(p);setProjects(ps);pushProject(p);}
+  closeModal('proj-modal'); renderProjects();
+  if(curTab==='social')renderSocial();
+  toast(existing?'Project updated':'Project created');
+}
+
+function deleteProject(pid){
+  if(!confirm('Delete this project? Cannot be undone.')) return;
+  setProjects(getProjects().filter(p=>p.id!==pid));
+  setRecent(getRecent().filter(r=>r!==pid));
+  removeProjectDB(pid); renderProjects(); toast('Project deleted');
+}
+
+// ── API FILTERS ───────────────────────────────────────
+let aFilter='all';
+document.querySelectorAll('[data-af]').forEach(b=>b.addEventListener('click',()=>{
+  aFilter=b.dataset.af;
+  document.querySelectorAll('[data-af]').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); renderAPIs();
+}));
+document.getElementById('api-search').addEventListener('input',function(){renderAPIs(this.value);});
+
+// ── RENDER APIS ───────────────────────────────────────
+function renderAPIs(searchQ){
+  let apis=getAPIs();
+  if(aFilter!=='all')apis=apis.filter(a=>a.status===aFilter);
+  if(searchQ){const q=searchQ.toLowerCase();apis=apis.filter(a=>[a.name,a.notes||'',...(a.tags||[])].some(s=>s.toLowerCase().includes(q)));}
+  const grid=document.getElementById('agrid');
+  grid.innerHTML='';
+  if(!apis.length){grid.innerHTML=`<div class="empty" style="grid-column:1/-1"><p>No API keys.</p><button class="btn primary" onclick="openAPIModal()">+ Add Key</button></div>`;return;}
+  const projects=getProjects(), statusLabel={using:'Using','want-to-try':'Want to Try',archived:'Archived'};
+  apis.forEach(a=>{
+    const proj=a.projectId?projects.find(p=>p.id===a.projectId):null;
+    const card=document.createElement('div'); card.className='ac';
+    card.innerHTML=`
+      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+        <span style="font-weight:700;font-size:14px;flex:1">${esc(a.name)}</span>
+        <span class="chip ${a.status}">${statusLabel[a.status]||a.status}</span>
+      </div>
+      <div class="key-row"><span class="key-val">${esc(a.key||'(no key)')}</span><button class="btn xs" onclick="copy(${js(a.key||'')},'${esc(a.name)} key')">copy</button></div>
+      <div class="bubble-row">
+        ${proj?`<span class="chip tag" style="cursor:pointer" onclick="openDetail(${js(proj.id)})">📁 ${esc(proj.name)}</span>`:''}
+        ${(a.tags||[]).map(t=>`<span class="chip tag">${esc(t)}</span>`).join('')}
+      </div>
+      ${a.notes?`<div style="font-size:12px;color:var(--muted)">${esc(a.notes)}</div>`:''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <button class="btn sm" onclick="editAPI(${js(a.id)})">Edit</button>
+        <select class="btn sm" style="cursor:pointer" onchange="setAPIStatus(${js(a.id)},this.value)">
+          <option value="using" ${a.status==='using'?'selected':''}>Using</option>
+          <option value="want-to-try" ${a.status==='want-to-try'?'selected':''}>Want to Try</option>
+          <option value="archived" ${a.status==='archived'?'selected':''}>Archived</option>
+        </select>
+        <button class="btn sm danger" onclick="deleteAPI(${js(a.id)})">Delete</button>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+function setAPIStatus(aid,status){const apis=getAPIs(),a=apis.find(x=>x.id===aid);if(a){a.status=status;setAPIs(apis);pushAPI(a);renderAPIs();toast('Status updated');}}
+
+// ── API CRUD ──────────────────────────────────────────
+function openAPIModal(aid){
+  const a=aid?getAPIs().find(x=>x.id===aid):null;
+  document.getElementById('api-modal-title').textContent=a?'Edit API Key':'Add API Key';
+  document.getElementById('am-id').value=a?a.id:'';
+  document.getElementById('am-name').value=a?a.name:'';
+  document.getElementById('am-key').value=a?(a.key||''):'';
+  document.getElementById('am-status').value=a?a.status:'using';
+  document.getElementById('am-tags').value=a?(a.tags||[]).join(', '):'';
+  document.getElementById('am-notes').value=a?(a.notes||''):'';
+  const sel=document.getElementById('am-proj');
+  sel.innerHTML='<option value="">— None —</option>';
+  getProjects().forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name;if(a&&a.projectId===p.id)o.selected=true;sel.appendChild(o);});
+  openModal('api-modal');
+}
+const editAPI=aid=>openAPIModal(aid);
+
+function saveAPI(){
+  const id=document.getElementById('am-id').value, name=document.getElementById('am-name').value.trim();
+  if(!name){toast('Name required');return;}
+  const apis=getAPIs(), existing=id?apis.find(a=>a.id===id):null;
+  const tags=document.getElementById('am-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const data={name,key:document.getElementById('am-key').value.trim(),status:document.getElementById('am-status').value,projectId:document.getElementById('am-proj').value,tags,notes:document.getElementById('am-notes').value.trim()};
+  if(existing){Object.assign(existing,data);pushAPI(existing);}
+  else{const a={id:uid(),...data};apis.push(a);pushAPI(a);}
+  setAPIs(apis); closeModal('api-modal'); renderAPIs();
+  toast(existing?'API updated':'API key saved');
+}
+function deleteAPI(aid){
+  if(!confirm('Delete this API key?')) return;
+  setAPIs(getAPIs().filter(a=>a.id!==aid));
+  removeAPIDB(aid); renderAPIs(); toast('Deleted');
+}
+
+// ── ASSETS ────────────────────────────────────────────
+function populateAssetProjFilter(){
+  const sel=document.getElementById('asset-proj-filter'),cur=sel.value;
+  sel.innerHTML='<option value="all">All Projects</option>';
+  getProjects().forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name;if(p.id===cur)o.selected=true;sel.appendChild(o);});
+}
+document.getElementById('asset-proj-filter').addEventListener('change',renderAssets);
+
+function renderAssets(){
+  const assets=getAssets(), filterVal=document.getElementById('asset-proj-filter').value;
+  const filtered=filterVal==='all'?assets:assets.filter(a=>a.projectId===filterVal);
+  const grid=document.getElementById('asset-grid');
+  grid.innerHTML='';
+  if(!filtered.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1"><p>No assets yet. Drop files above.</p></div>';return;}
+  const projects=getProjects();
+  filtered.forEach(a=>{
+    const proj=a.projectId?projects.find(p=>p.id===a.projectId):null;
+    const item=document.createElement('div'); item.className='asset-item';
+    const isImg=a.type&&a.type.startsWith('image/'), ext=(a.name.split('.').pop()||'?').toUpperCase();
+    item.innerHTML=`
+      ${isImg?`<img class="asset-thumb" src="${a.data}" alt="${esc(a.name)}" loading="lazy">`:`<div class="asset-icon">${ext}</div>`}
+      <div class="asset-info">
+        <div class="asset-name" title="${esc(a.name)}">${esc(a.name)}</div>
+        ${proj?`<div style="margin-bottom:4px"><span class="chip tag" style="font-size:10px">${esc(proj.name)}</span></div>`:''}
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="btn xs" onclick="downloadAsset(${js(a.id)})">↓</button>
+          <button class="btn xs" onclick="copy(${js(a.name)},'name')">name</button>
+          <button class="btn xs danger" onclick="deleteAsset(${js(a.id)})">✕</button>
+        </div>
+      </div>`;
+    grid.appendChild(item);
+  });
+}
+
+function handleFiles(files){
+  const filterVal=document.getElementById('asset-proj-filter').value, projectId=filterVal!=='all'?filterVal:'';
+  Array.from(files).forEach(file=>{
+    if(file.size>5*1024*1024){toast(file.name+' too large (max 5MB)');return;}
+    const reader=new FileReader();
+    reader.onload=e=>{const assets=getAssets();assets.push({id:uid(),name:file.name,type:file.type,size:file.size,data:e.target.result,projectId,uploaded:now()});setAssets(assets);renderAssets();toast('Uploaded '+file.name);};
+    reader.readAsDataURL(file);
+  });
+}
+
+const dz=document.getElementById('drop-zone'), fi=document.getElementById('file-input');
+dz.addEventListener('click',()=>fi.click());
+fi.addEventListener('change',()=>{handleFiles(fi.files);fi.value='';});
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');handleFiles(e.dataTransfer.files);});
+function downloadAsset(aid){const a=getAssets().find(x=>x.id===aid);if(!a)return;const l=document.createElement('a');l.href=a.data;l.download=a.name;l.click();}
+function deleteAsset(aid){if(!confirm('Delete this asset?'))return;setAssets(getAssets().filter(a=>a.id!==aid));renderAssets();toast('Deleted');}
+
+// ── PATH DROP ZONE ────────────────────────────────────
+function initPathDrop(){
+  const zone=document.getElementById('path-drop-zone'), input=document.getElementById('pm-path');
+  if(!zone||!input) return;
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.style.borderColor='var(--accent)';zone.style.background='var(--accent-bg)';});
+  zone.addEventListener('dragleave',()=>{zone.style.borderColor='var(--border)';zone.style.background='';});
+  zone.addEventListener('drop',e=>{
+    e.preventDefault();zone.style.borderColor='var(--border)';zone.style.background='';
+    const text=e.dataTransfer.getData('text')||e.dataTransfer.getData('text/plain');
+    if(text&&text.trim()){input.value=text.trim().replace(/^["']|["']$/g,'');return;}
+    const entry=e.dataTransfer.items&&e.dataTransfer.items[0]&&e.dataTransfer.items[0].webkitGetAsEntry?e.dataTransfer.items[0].webkitGetAsEntry():null;
+    if(entry){input.value=entry.name;toast('Got folder name — prepend your full path if needed');return;}
+    const file=e.dataTransfer.files[0];if(file)input.value=file.name;
+  });
+}
+
+// ── GLOBAL SEARCH ─────────────────────────────────────
+const gsEl=document.getElementById('gs'), sdEl=document.getElementById('sd');
+gsEl.addEventListener('input',function(){
+  const q=this.value.trim(); if(!q){sdEl.style.display='none';return;}
+  const ql=q.toLowerCase(),results=[];
+  getProjects().forEach(p=>{if([p.name,p.goal||'',p.notes||'',...(p.tags||[])].some(s=>s.toLowerCase().includes(ql)))results.push({type:'Project',label:p.name,action:()=>openDetail(p.id)});});
+  getAPIs().forEach(a=>{if([a.name,a.notes||'',...(a.tags||[])].some(s=>s.toLowerCase().includes(ql)))results.push({type:'API',label:a.name,action:()=>{switchToTab('apis');setTimeout(()=>renderAPIs(q),50);}});});
+  getAssets().forEach(a=>{if(a.name.toLowerCase().includes(ql))results.push({type:'Asset',label:a.name,action:()=>{switchToTab('assets');setTimeout(renderAssets,50);}});});
+  if(!results.length){sdEl.innerHTML='<div class="sri" style="color:var(--muted)">No results</div>';}
+  else{sdEl.innerHTML=results.slice(0,10).map((r,i)=>`<div class="sri" data-idx="${i}"><span class="sri-type">${r.type}</span>${esc(r.label)}</div>`).join('');
+    sdEl.querySelectorAll('.sri[data-idx]').forEach((el,i)=>el.addEventListener('click',()=>{results[i].action();sdEl.style.display='none';gsEl.value='';}));}
+  sdEl.style.display='block';
+});
+document.addEventListener('click',e=>{if(!gsEl.contains(e.target)&&!sdEl.contains(e.target))sdEl.style.display='none';});
+function switchToTab(name){curTab=name;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));document.getElementById('tab-'+name).classList.add('on');document.querySelector(`nav button[data-tab="${name}"]`).classList.add('on');if(name==='social')renderSocial();}
+
+// ── BOOT ──────────────────────────────────────────────
+supa && supa.auth.onAuthStateChange(async(event,session)=>{
+  if(event==='SIGNED_IN'&&session){currentUser=session.user;await loadData();await migrateIfNeeded();renderProjects();renderAPIs();renderAssets();renderRecent();showApp();}
+  if(event==='SIGNED_OUT'){currentUser=null;DB={projects:[],apis:[]};showLogin();}
+});
+
+(async()=>{
+  if(!supa){document.getElementById('login-err').style.color='var(--red)';document.getElementById('login-err').textContent='⚠ Open via GitHub Pages or a local server — not directly from your file system.';return;}
+  try{
+    const{data:{session}}=await supa.auth.getSession();
+    if(session){currentUser=session.user;await loadData();await migrateIfNeeded();renderProjects();renderAPIs();renderAssets();renderRecent();showApp();}
+  }catch(e){document.getElementById('login-err').style.color='var(--red)';document.getElementById('login-err').textContent='Connection error: '+e.message;}
+})();
+</script>
+</body>
+</html>
