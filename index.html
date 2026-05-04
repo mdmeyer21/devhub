@@ -855,6 +855,66 @@ function detailAddItem(pid){
   if(!p.checklist)p.checklist=[];
   p.checklist.push({id:uid(),text,done:false}); p.lastUpdated=now(); setProjects(ps); pushProject(p); openDetail(pid);
 }
+// ── BUBBLE MAP ────────────────────────────────────────
+function renderBubbleMap(pid){
+  const canvas=document.getElementById('bubble-canvas');
+  const svg=document.getElementById('bubble-svg');
+  if(!canvas||!svg) return;
+  const p=getProjects().find(x=>x.id===pid); if(!p) return;
+  const apis=getAPIs().filter(a=>a.projectId===pid);
+  const assets=getAssets().filter(a=>a.projectId===pid).slice(0,6);
+  const W=canvas.offsetWidth||600, H=canvas.offsetHeight||420;
+  const cx=W/2, cy=H/2;
+
+  // build nodes list
+  const nodes=[];
+  (p.socials||[]).forEach(sid=>{const pl=platMap[sid];if(pl)nodes.push({type:'social',label:pl.name,icon:pl.icon,cls:sid});});
+  apis.forEach(a=>nodes.push({type:'api',label:a.name,icon:'🔑',cls:''}));
+  (p.links||[]).forEach(l=>nodes.push({type:'link',label:l.label,icon:'🔗',cls:'',url:l.url}));
+  assets.forEach(a=>nodes.push({type:'asset',label:a.name,icon:'🖼',cls:''}));
+  if(p.path) nodes.push({type:'link',label:'Local Path',icon:'📁',cls:''});
+
+  // position nodes in a circle
+  const r=Math.min(W,H)*0.33;
+  const lines=[];
+  svg.innerHTML='';
+  canvas.querySelectorAll('.bnode').forEach(n=>n.remove());
+
+  // center node
+  const cNode=document.createElement('div');
+  cNode.className='bnode center';
+  cNode.style.cssText=`left:${cx}px;top:${cy}px`;
+  cNode.innerHTML=`<div class="bnode-circle">${esc(p.name.slice(0,2).toUpperCase())}</div><div class="bnode-label">${esc(p.name)}</div>`;
+  canvas.appendChild(cNode);
+
+  nodes.forEach((n,i)=>{
+    const angle=(2*Math.PI/nodes.length)*i - Math.PI/2;
+    const nx=cx+r*Math.cos(angle), ny=cy+r*Math.sin(angle);
+
+    // SVG line
+    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',cx); line.setAttribute('y1',cy);
+    line.setAttribute('x2',nx); line.setAttribute('y2',ny);
+    line.setAttribute('class','bubble-line');
+    svg.appendChild(line);
+
+    // node div
+    const nd=document.createElement('div');
+    nd.className=`bnode ${n.type}`;
+    nd.style.cssText=`left:${nx}px;top:${ny}px`;
+    nd.innerHTML=`<div class="bnode-circle ${n.cls}">${n.icon}</div><div class="bnode-label">${esc(n.label)}</div>`;
+    if(n.url) nd.querySelector('.bnode-circle').onclick=()=>window.open(n.url,'_blank');
+    canvas.appendChild(nd);
+  });
+
+  if(!nodes.length){
+    const msg=document.createElement('div');
+    msg.style.cssText='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px';
+    msg.textContent='Add social platforms, API keys, or links to see connections here.';
+    canvas.appendChild(msg);
+  }
+}
+
 function deleteCheckItem(pid,iid){
   const ps=getProjects(),p=ps.find(x=>x.id===pid); if(!p) return;
   p.checklist=p.checklist.filter(i=>i.id!==iid); p.lastUpdated=now(); setProjects(ps); pushProject(p); openDetail(pid);
