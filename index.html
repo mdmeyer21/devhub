@@ -719,26 +719,27 @@ function renderProjects(searchQ) {
     const cl=p.checklist||[], done=cl.filter(i=>i.done).length, pct=cl.length?Math.round(done/cl.length*100):0;
     const links=p.links||[], socials=p.socials||[], projAPIs=allAPIs.filter(a=>a.projectId===p.id);
     const hasDrive=links.some(l=>l.label.toLowerCase().includes('drive'));
-    const clHtml=cl.slice(0,3).map(i=>`<div class="cli${i.done?' done':''}"><input type="checkbox" ${i.done?'checked':''} onchange="toggleCheck(${js(p.id)},${js(i.id)},this.checked)"><span>${esc(i.text)}</span></div>`).join('')+
-      (cl.length>3?`<button class="btn xs ghost" style="margin-top:2px;font-size:11px" onclick="openDetail(${js(p.id)})">+${cl.length-3} more</button>`:'')+
-      `<div class="cl-add"><input id="ci-${p.id}" placeholder="Add item…" onkeydown="if(event.key==='Enter')addCheckItem(${js(p.id)})"><button class="btn xs" onclick="addCheckItem(${js(p.id)})">Add</button></div>`;
+    const pid=p.id;
+    const clHtml=cl.slice(0,3).map(i=>`<div class="cli${i.done?' done':''}"><input type="checkbox" ${i.done?'checked':''} onchange="toggleCheck('${pid}','${i.id}',this.checked)"><span>${esc(i.text)}</span></div>`).join('')+
+      (cl.length>3?`<button class="btn xs ghost" style="margin-top:2px;font-size:11px" onclick="openDetail('${pid}')">+${cl.length-3} more</button>`:'')+
+      `<div class="cl-add"><input id="ci-${pid}" placeholder="Add item…" onkeydown="if(event.key==='Enter')addCheckItem('${pid}')"><button class="btn xs" onclick="addCheckItem('${pid}')">Add</button></div>`;
     const card=document.createElement('div');
-    card.className=`pc ${p.status}`; card.id='pc-'+p.id;
+    card.className=`pc ${p.status}`; card.id='pc-'+pid;
     card.innerHTML=`
-      <div class="card-head"><div class="card-name" onclick="openDetail(${js(p.id)})">${esc(p.name)}</div><span class="chip ${p.status}">${p.status}</span></div>
+      <div class="card-head"><div class="card-name" onclick="openDetail('${pid}')">${esc(p.name)}</div><span class="chip ${p.status}">${p.status}</span></div>
       <div class="card-meta">🕐 ${rel(p.lastUpdated)}${cl.length?` · ${done}/${cl.length} done`:''}</div>
       ${(p.tags||[]).length||hasDrive?`<div class="bubble-row">${(p.tags||[]).map(t=>`<span class="chip tag">${esc(t)}</span>`).join('')}<span class="chip ${hasDrive?'drive':'nodrive'}">${hasDrive?'✓ Drive':'○ Drive'}</span></div>`:''}
       ${links.length?`<div class="bubble-row">${links.map(l=>`<a class="chip link" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join('')}</div>`:''}
       ${socials.length?`<div class="bubble-row">${socials.map(sid=>{const pl=platMap[sid];return pl?`<a class="plat ${sid}" href="${esc(pl.url)}" target="_blank" rel="noopener">${pl.icon} ${pl.name}</a>`:''}).join('')}</div>`:''}
-      ${projAPIs.length?`<div class="bubble-row">${projAPIs.map(a=>`<span class="chip api-chip" title="Click to copy" onclick="copy(${js(a.key||'')},'${esc(a.name)}')">${esc(a.name)}</span>`).join('')}</div>`:''}
-      ${p.path?`<div class="mono-row"><span>claude "${esc(p.path)}"</span><button class="btn xs" onclick="copy(${js('claude "'+p.path+'"')},'command')">copy</button></div>`:''}
+      ${projAPIs.length?`<div class="bubble-row">${projAPIs.map(a=>`<span class="chip api-chip" title="Click to copy" onclick="copy('${esc(a.key||'')}','${esc(a.name)}')">${esc(a.name)}</span>`).join('')}</div>`:''}
+      ${p.path?`<div class="mono-row"><span>claude "${esc(p.path)}"</span><button class="btn xs" onclick="copy('claude &quot;${esc(p.path)}&quot;','command')">copy</button></div>`:''}
       ${cl.length?`<div><div class="prog"><div class="prog-fill" style="width:${pct}%"></div></div><div class="cl" style="margin-top:6px">${clHtml}</div></div>`:`<div class="cl">${clHtml}</div>`}
-      <textarea class="notes" placeholder="Quick notes…" onblur="saveNotes(${js(p.id)},this.value)">${esc(p.notes||'')}</textarea>
+      <textarea class="notes" placeholder="Quick notes…" onblur="saveNotes('${pid}',this.value)">${esc(p.notes||'')}</textarea>
       <div class="bubble-row">
-        <button class="btn sm primary" onclick="openDetail(${js(p.id)})">Open</button>
-        <button class="btn sm" onclick="editProject(${js(p.id)})">Edit</button>
-        <button class="btn sm" onclick="downloadMem(${js(p.id)})">↓ .md</button>
-        <button class="btn sm danger" onclick="deleteProject(${js(p.id)})">Delete</button>
+        <button class="btn sm primary" onclick="openDetail('${pid}')">Open</button>
+        <button class="btn sm" onclick="editProject('${pid}')">Edit</button>
+        <button class="btn sm" onclick="downloadMem('${pid}')">↓ .md</button>
+        <button class="btn sm danger" onclick="deleteProject('${pid}')">Delete</button>
       </div>`;
     grid.appendChild(card);
   });
