@@ -651,7 +651,7 @@ function renderPlatPicker() {
   if(!c) return;
   c.innerHTML=PLATFORMS.map(p=>{
     const on=_editSocials.includes(p.id);
-    return `<button type="button" class="plat ${p.id}" onclick="togglePlatPicker(${js(p.id)})" style="opacity:${on?1:.45};border-style:${on?'solid':'dashed'}">${p.icon} ${p.name}</button>`;
+    return `<button type="button" class="plat ${p.id}" onclick="togglePlatPicker(${js(p.id)})" style="opacity:${on?1:.45};border-style:${on?'solid':'dashed'};pointer-events:all;position:relative;z-index:10;cursor:pointer">${on?'✓ ':''} ${p.icon} ${p.name}</button>`;
   }).join('');
 }
 function togglePlatPicker(pid){
