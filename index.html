@@ -1170,8 +1170,15 @@ document.addEventListener('click',e=>{if(!gsEl.contains(e.target)&&!sdEl.contain
 function switchToTab(name){curTab=name;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));document.getElementById('tab-'+name).classList.add('on');document.querySelector(`nav button[data-tab="${name}"]`).classList.add('on');if(name==='social')renderSocial();}
 
 // ── BOOT ──────────────────────────────────────────────
+async function bootSession(session){
+  try{currentUser=session.user;await loadData();}catch(e){console.error('boot:',e);}
+  try{await migrateIfNeeded();}catch(e){}
+  try{renderProjects();renderAPIs();renderAssets();renderRecent();}catch(e){}
+  showApp();
+}
+
 supa && supa.auth.onAuthStateChange(async(event,session)=>{
-  if(event==='SIGNED_IN'&&session){currentUser=session.user;await loadData();await migrateIfNeeded();renderProjects();renderAPIs();renderAssets();renderRecent();showApp();}
+  if(event==='SIGNED_IN'&&session) await bootSession(session);
   if(event==='SIGNED_OUT'){currentUser=null;DB={projects:[],apis:[]};showLogin();}
 });
 
@@ -1179,7 +1186,7 @@ supa && supa.auth.onAuthStateChange(async(event,session)=>{
   if(!supa){document.getElementById('login-err').style.color='var(--red)';document.getElementById('login-err').textContent='⚠ Open via GitHub Pages or a local server — not directly from your file system.';return;}
   try{
     const{data:{session}}=await supa.auth.getSession();
-    if(session){currentUser=session.user;await loadData();await migrateIfNeeded();renderProjects();renderAPIs();renderAssets();renderRecent();showApp();}
+    if(session) await bootSession(session);
   }catch(e){document.getElementById('login-err').style.color='var(--red)';document.getElementById('login-err').textContent='Connection error: '+e.message;}
 })();
 </script>
