@@ -1073,9 +1073,9 @@ function renderAssets(){
         <div class="asset-name" title="${esc(a.name)}">${esc(a.name)}</div>
         ${proj?`<div style="margin-bottom:4px"><span class="chip tag" style="font-size:10px">${esc(proj.name)}</span></div>`:''}
         <div style="display:flex;gap:4px;flex-wrap:wrap">
-          <button class="btn xs" onclick="downloadAsset(${js(a.id)})">↓</button>
-          <button class="btn xs" onclick="copy(${js(a.name)},'name')">name</button>
-          <button class="btn xs danger" onclick="deleteAsset(${js(a.id)})">✕</button>
+          <button class="btn xs" onclick="downloadAsset('${a.id}')">↓</button>
+          <button class="btn xs" onclick="copy('${esc(a.name)}','name')">name</button>
+          <button class="btn xs danger" onclick="deleteAsset('${a.id}')">✕</button>
         </div>
       </div>`;
     grid.appendChild(item);
