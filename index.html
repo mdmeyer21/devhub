@@ -489,12 +489,14 @@ let DB = {projects:[], apis:[]};
 
 async function loadData() {
   const uid = currentUser.id;
-  const [{data:p},{data:a}] = await Promise.all([
-    supa.from('projects').select('data').eq('user_id',uid),
-    supa.from('apis').select('data').eq('user_id',uid),
-  ]);
-  DB.projects = (p||[]).map(r=>r.data);
-  DB.apis = (a||[]).map(r=>r.data);
+  try {
+    const [{data:p},{data:a}] = await Promise.all([
+      supa.from('projects').select('data').eq('user_id',uid),
+      supa.from('apis').select('data').eq('user_id',uid),
+    ]);
+    DB.projects = (p||[]).map(r=>r.data);
+    DB.apis = (a||[]).map(r=>r.data);
+  } catch(e) { console.error('loadData:', e); }
 }
 
 async function pushProject(p) {
