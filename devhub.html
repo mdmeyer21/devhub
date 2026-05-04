@@ -1017,6 +1017,124 @@ dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');ha
 function downloadAsset(aid){const a=getAssets().find(x=>x.id===aid);if(!a)return;const l=document.createElement('a');l.href=a.data;l.download=a.name;l.click();}
 function deleteAsset(aid){if(!confirm('Delete this asset?'))return;setAssets(getAssets().filter(a=>a.id!==aid));renderAssets();toast('Deleted');}
 
+// ── FOLDER IMPORT ─────────────────────────────────────
+async function readEntryFile(entry){return new Promise(r=>entry.file(r));}
+async function readDirEntries(reader){
+  return new Promise(r=>{
+    const all=[];
+    function next(){reader.readEntries(batch=>{if(!batch.length){r(all);return;}all.push(...batch);next();});}
+    next();
+  });
+}
+async function collectEntries(entry,depth=0){
+  if(depth>4)return[];
+  if(entry.isFile)return[entry];
+  const reader=entry.createReader(),entries=await readDirEntries(reader),results=[];
+  for(const e of entries)results.push(...await collectEntries(e,depth+1));
+  return results;
+}
+
+async function importFolder(dtItems){
+  const rootEntry=dtItems[0].webkitGetAsEntry();
+  if(!rootEntry||!rootEntry.isDirectory){toast('Drop a folder, not a file');return;}
+  toast('Reading folder…');
+  const folderName=rootEntry.name;
+  const allEntries=await collectEntries(rootEntry);
+  const files=await Promise.all(allEntries.map(async e=>({entry:e,file:await readEntryFile(e)})));
+
+  // parse text files
+  const readText=f=>new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result);fr.readAsText(f);});
+  let projName=folderName,projGoal='',projTags=[],projMemory='';
+  const newAPIs=[];
+
+  for(const {entry,file} of files){
+    const name=file.name.toLowerCase(),path=entry.fullPath;
+    if(name==='package.json'&&!path.includes('/node_modules/')){
+      try{const pkg=JSON.parse(await readText(file));if(pkg.name)projName=pkg.name;if(pkg.description)projGoal=pkg.description;if(pkg.keywords)projTags=[...pkg.keywords.slice(0,5)];}catch{}
+    }
+    if((name==='readme.md'||name==='readme.txt')&&!path.includes('/node_modules/')){
+      try{const txt=await readText(file);projMemory=txt;if(!projGoal){const firstLine=txt.split('\n').find(l=>l.trim()&&!l.startsWith('#'));if(firstLine)projGoal=firstLine.trim().slice(0,200);}}catch{}
+    }
+    if(name==='.env'||name==='.env.local'||name==='.env.example'){
+      try{
+        const txt=await readText(file);
+        txt.split('\n').forEach(line=>{
+          const m=line.match(/^([A-Z0-9_]+)\s*=\s*(.*)$/);
+          if(m&&m[1]){newAPIs.push({id:uid(),name:m[1],key:m[2].replace(/^["']|["']$/g,'').trim()||'',status:'using',tags:[projName],notes:`From ${file.name}`,projectId:''});}
+        });
+      }catch{}
+    }
+  }
+
+  // create project
+  const ps=getProjects();
+  const p={id:uid(),name:projName,status:'active',path:folderName,goal:projGoal,tags:projTags,links:[],socials:[],checklist:[],notes:'',memoryFile:projMemory||'',lastUpdated:now(),lastOpened:null};
+  if(!p.memoryFile)p.memoryFile=memTemplate(p);
+  ps.unshift(p); setProjects(ps); pushProject(p);
+
+  // attach API keys to project
+  if(newAPIs.length){
+    const apis=getAPIs();
+    newAPIs.forEach(a=>{a.projectId=p.id;apis.push(a);pushAPI(a);});
+    setAPIs(apis);
+  }
+
+  // add image assets
+  const imgExts=['png','jpg','jpeg','gif','svg','webp','ico'];
+  const imgFiles=files.filter(({file,entry})=>imgExts.includes(file.name.split('.').pop().toLowerCase())&&!entry.fullPath.includes('/node_modules/'));
+  let assetCount=0;
+  const assets=getAssets();
+  for(const {file} of imgFiles.slice(0,30)){
+    if(file.size>5*1024*1024)continue;
+    await new Promise(r=>{const fr=new FileReader();fr.onload=e=>{assets.push({id:uid(),name:file.name,type:file.type,size:file.size,data:e.target.result,projectId:p.id,uploaded:now()});assetCount++;r();};fr.readAsDataURL(file);});
+  }
+  setAssets(assets);
+
+  renderProjects(); renderAPIs(); renderAssets();
+  toast(`✓ Imported "${projName}" · ${newAPIs.length} API keys · ${assetCount} images`);
+}
+
+const fdz=document.getElementById('folder-drop-zone'),fdi=document.getElementById('folder-input');
+fdz.addEventListener('click',()=>fdi.click());
+fdi.addEventListener('change',()=>{if(fdi.files.length)importFromFileList(fdi.files);fdi.value='';});
+fdz.addEventListener('dragover',e=>{e.preventDefault();fdz.classList.add('over');});
+fdz.addEventListener('dragleave',()=>fdz.classList.remove('over'));
+fdz.addEventListener('drop',async e=>{
+  e.preventDefault();fdz.classList.remove('over');
+  if(e.dataTransfer.items&&e.dataTransfer.items[0]&&e.dataTransfer.items[0].webkitGetAsEntry){
+    const entry=e.dataTransfer.items[0].webkitGetAsEntry();
+    if(entry&&entry.isDirectory){await importFolder(e.dataTransfer.items);return;}
+  }
+  handleFiles(e.dataTransfer.files);
+});
+
+async function importFromFileList(files){
+  // fallback when using the file input (webkitdirectory) — no directory entries API
+  const arr=Array.from(files);
+  let projName=arr[0]?.webkitRelativePath?.split('/')[0]||'Imported Project';
+  let projGoal='',projTags=[],projMemory='';
+  const newAPIs=[],assets=getAssets();
+  const readText=f=>new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result);fr.readAsText(f);});
+  for(const file of arr){
+    const name=file.name.toLowerCase(),rel=file.webkitRelativePath||'';
+    if(rel.includes('node_modules'))continue;
+    if(name==='package.json'){try{const pkg=JSON.parse(await readText(file));if(pkg.name)projName=pkg.name;if(pkg.description)projGoal=pkg.description;if(pkg.keywords)projTags=[...pkg.keywords.slice(0,5)];}catch{}}
+    if(name==='readme.md'||name==='readme.txt'){try{const txt=await readText(file);projMemory=txt;if(!projGoal){const fl=txt.split('\n').find(l=>l.trim()&&!l.startsWith('#'));if(fl)projGoal=fl.trim().slice(0,200);}}catch{}}
+    if(name==='.env'||name==='.env.local'||name==='.env.example'){try{const txt=await readText(file);txt.split('\n').forEach(line=>{const m=line.match(/^([A-Z0-9_]+)\s*=\s*(.*)$/);if(m&&m[1])newAPIs.push({id:uid(),name:m[1],key:m[2].replace(/^["']|["']$/g,'').trim()||'',status:'using',tags:[projName],notes:`From ${file.name}`,projectId:''});});}catch{}}
+    const imgExts=['png','jpg','jpeg','gif','svg','webp','ico'];
+    if(imgExts.includes(name.split('.').pop())&&file.size<=5*1024*1024){await new Promise(r=>{const fr=new FileReader();fr.onload=e=>{assets.push({id:uid(),name:file.name,type:file.type,size:file.size,data:e.target.result,projectId:'',uploaded:now()});r();};fr.readAsDataURL(file);});}
+  }
+  const ps=getProjects();
+  const p={id:uid(),name:projName,status:'active',path:projName,goal:projGoal,tags:projTags,links:[],socials:[],checklist:[],notes:'',memoryFile:projMemory||'',lastUpdated:now(),lastOpened:null};
+  if(!p.memoryFile)p.memoryFile=memTemplate(p);
+  ps.unshift(p);setProjects(ps);pushProject(p);
+  newAPIs.forEach(a=>{a.projectId=p.id;});
+  const apis=getAPIs();newAPIs.forEach(a=>apis.push(a));setAPIs(apis);newAPIs.forEach(a=>pushAPI(a));
+  assets.forEach(a=>{if(!a.projectId)a.projectId=p.id;});setAssets(assets);
+  renderProjects();renderAPIs();renderAssets();
+  toast(`✓ Imported "${projName}" · ${newAPIs.length} API keys · ${assets.filter(a=>a.projectId===p.id).length} images`);
+}
+
 // ── PATH DROP ZONE ────────────────────────────────────
 function initPathDrop(){
   const zone=document.getElementById('path-drop-zone'), input=document.getElementById('pm-path');
