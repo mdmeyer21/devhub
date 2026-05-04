@@ -869,11 +869,11 @@ function renderBubbleMap(pid){
 
   // build nodes list
   const nodes=[];
-  (p.socials||[]).forEach(sid=>{const pl=platMap[sid];if(pl)nodes.push({type:'social',label:pl.name,icon:pl.icon,cls:sid});});
-  apis.forEach(a=>nodes.push({type:'api',label:a.name,icon:'🔑',cls:''}));
-  (p.links||[]).forEach(l=>nodes.push({type:'link',label:l.label,icon:'🔗',cls:'',url:l.url}));
-  assets.forEach(a=>nodes.push({type:'asset',label:a.name,icon:'🖼',cls:''}));
-  if(p.path) nodes.push({type:'link',label:'Local Path',icon:'📁',cls:''});
+  (p.socials||[]).forEach(sid=>{const pl=platMap[sid];if(pl)nodes.push({type:'social',label:pl.name,icon:pl.icon,cls:sid,url:pl.url,tooltip:'Open '+pl.name});});
+  apis.forEach(a=>nodes.push({type:'api',label:a.name,icon:'🔑',cls:'',key:a.key||'',tooltip:'Click to copy API key'}));
+  (p.links||[]).forEach(l=>nodes.push({type:'link',label:l.label,icon:'🔗',cls:'',url:l.url,tooltip:'Open '+l.label}));
+  assets.forEach(a=>nodes.push({type:'asset',label:a.name,icon:a.type&&a.type.startsWith('image/')&&a.data?'🖼':'📄',cls:'',assetData:a.data,tooltip:'Download '+a.name}));
+  if(p.path) nodes.push({type:'path',label:'Local Path',icon:'📁',cls:'',key:'claude "'+p.path+'"',tooltip:'Click to copy Claude command'});
 
   // position nodes in a circle
   const r=Math.min(W,H)*0.33;
