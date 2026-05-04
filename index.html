@@ -830,6 +830,7 @@ function openDetail(pid){
       <button class="btn sm" onclick="editProject('${pid}');closeModal('detail-modal')">Edit</button>
     </div>
     ${p.goal?`<p style="color:var(--muted);font-size:13px;margin-bottom:14px">${esc(p.goal)}</p>`:''}
+    <div id="bubble-canvas"><svg id="bubble-svg"></svg></div>
     ${links.length?`<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px">Links</div><div class="bubble-row">${links.map(l=>`<div style="display:flex;align-items:center;gap:4px"><a class="chip link" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a><button class="btn xs" onclick="copy('${esc(l.url)}','${esc(l.label)}')">copy</button></div>`).join('')}</div></div>`:''}
     ${socials.length?`<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px">Platforms</div><div class="bubble-row">${socials.map(sid=>{const pl=platMap[sid];return pl?`<a class="plat ${sid}" href="${esc(pl.url)}" target="_blank" rel="noopener">${pl.icon} ${pl.name}</a>`:''}).join('')}</div></div>`:''}
     ${p.path?`<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Claude Code</div><div class="mono-row"><span>claude "${esc(p.path)}"</span><button class="btn xs" onclick="copy('claude &quot;${esc(p.path)}&quot;','command')">copy</button></div></div>`:''}
