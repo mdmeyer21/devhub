@@ -812,23 +812,23 @@ function openDetail(pid){
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
       <div style="font-size:18px;font-weight:800;flex:1">${esc(p.name)}</div>
       <span class="chip ${p.status}">${p.status}</span>
-      <button class="btn sm" onclick="editProject(${js(pid)});closeModal('detail-modal')">Edit</button>
+      <button class="btn sm" onclick="editProject('${pid}');closeModal('detail-modal')">Edit</button>
     </div>
     ${p.goal?`<p style="color:var(--muted);font-size:13px;margin-bottom:14px">${esc(p.goal)}</p>`:''}
-    ${links.length?`<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px">Links</div><div class="bubble-row">${links.map(l=>`<div style="display:flex;align-items:center;gap:4px"><a class="chip link" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a><button class="btn xs" onclick="copy(${js(l.url)},${js(l.label)})">copy</button></div>`).join('')}</div></div>`:''}
+    ${links.length?`<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px">Links</div><div class="bubble-row">${links.map(l=>`<div style="display:flex;align-items:center;gap:4px"><a class="chip link" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a><button class="btn xs" onclick="copy('${esc(l.url)}','${esc(l.label)}')">copy</button></div>`).join('')}</div></div>`:''}
     ${socials.length?`<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px">Platforms</div><div class="bubble-row">${socials.map(sid=>{const pl=platMap[sid];return pl?`<a class="plat ${sid}" href="${esc(pl.url)}" target="_blank" rel="noopener">${pl.icon} ${pl.name}</a>`:''}).join('')}</div></div>`:''}
-    ${p.path?`<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Claude Code</div><div class="mono-row"><span>claude "${esc(p.path)}"</span><button class="btn xs" onclick="copy(${js('claude "'+p.path+'"')},'command')">copy</button></div></div>`:''}
-    ${apis.length?`<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px">API Keys</div>${apis.map(a=>`<div class="key-row" style="margin-bottom:6px"><span class="chip api-chip" style="flex-shrink:0">${esc(a.name)}</span><span class="key-val">${esc(a.key||'(no key)')}</span><button class="btn xs" onclick="copy(${js(a.key||'')},'${esc(a.name)}')">copy</button></div>`).join('')}</div>`:''}
+    ${p.path?`<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Claude Code</div><div class="mono-row"><span>claude "${esc(p.path)}"</span><button class="btn xs" onclick="copy('claude &quot;${esc(p.path)}&quot;','command')">copy</button></div></div>`:''}
+    ${apis.length?`<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px">API Keys</div>${apis.map(a=>`<div class="key-row" style="margin-bottom:6px"><span class="chip api-chip" style="flex-shrink:0">${esc(a.name)}</span><span class="key-val">${esc(a.key||'(no key)')}</span><button class="btn xs" onclick="copy('${esc(a.key||'')}','${esc(a.name)}')">copy</button></div>`).join('')}</div>`:''}
     <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Checklist</div>
     <div class="cl" style="margin-bottom:6px">
-      ${cl.map(i=>`<div class="cli${i.done?' done':''}"><input type="checkbox" ${i.done?'checked':''} onchange="toggleCheck(${js(pid)},${js(i.id)},this.checked);openDetail(${js(pid)})"><span>${esc(i.text)}</span><button class="btn xs ghost" style="margin-left:auto;color:var(--red)" onclick="deleteCheckItem(${js(pid)},${js(i.id)})">✕</button></div>`).join('')}
+      ${cl.map(i=>`<div class="cli${i.done?' done':''}"><input type="checkbox" ${i.done?'checked':''} onchange="toggleCheck('${pid}','${i.id}',this.checked);openDetail('${pid}')"><span>${esc(i.text)}</span><button class="btn xs ghost" style="margin-left:auto;color:var(--red)" onclick="deleteCheckItem('${pid}','${i.id}')">✕</button></div>`).join('')}
     </div>
-    <div class="cl-add" style="margin-bottom:16px"><input id="dci-${pid}" placeholder="Add item…" onkeydown="if(event.key==='Enter')detailAddItem(${js(pid)})"><button class="btn sm" onclick="detailAddItem(${js(pid)})">Add</button></div>
+    <div class="cl-add" style="margin-bottom:16px"><input id="dci-${pid}" placeholder="Add item…" onkeydown="if(event.key==='Enter')detailAddItem('${pid}')"><button class="btn sm" onclick="detailAddItem('${pid}')">Add</button></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
       <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Memory File (.md)</div>
-      <div style="display:flex;gap:6px"><button class="btn xs" onclick="copy(document.getElementById('mem-${pid}').value,'memory file')">Copy All</button><button class="btn xs" onclick="downloadMem(${js(pid)})">↓ Download</button></div>
+      <div style="display:flex;gap:6px"><button class="btn xs" onclick="copy(document.getElementById('mem-${pid}').value,'memory file')">Copy All</button><button class="btn xs" onclick="downloadMem('${pid}')">↓ Download</button></div>
     </div>
-    <textarea class="mem" id="mem-${pid}" onblur="saveMem(${js(pid)},this.value)">${esc(p.memoryFile||memTemplate(p))}</textarea>
+    <textarea class="mem" id="mem-${pid}" onblur="saveMem('${pid}',this.value)">${esc(p.memoryFile||memTemplate(p))}</textarea>
     <p style="font-size:11px;color:var(--muted);margin-top:5px">Drop the .md into a new Claude chat to resume exactly where you left off.</p>`;
   openModal('detail-modal');
 }
