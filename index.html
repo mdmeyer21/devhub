@@ -446,17 +446,21 @@ async function doAuth() {
   const btn = document.getElementById('auth-btn');
   btn.textContent = '…'; btn.disabled = true; errEl.textContent = '';
   try {
-    const { error } = loginMode === 'signin'
+    console.log('AUTH: calling', loginMode);
+    const result = loginMode === 'signin'
       ? await supa.auth.signInWithPassword({email, password: pass})
       : await supa.auth.signUp({email, password: pass});
+    console.log('AUTH: result', result);
+    const { error } = result;
     btn.disabled = false;
     btn.textContent = loginMode === 'signin' ? 'Sign In' : 'Create Account';
     if (error) { errEl.textContent = error.message; return; }
     if (loginMode === 'signup') {
       errEl.style.color = 'var(--green)';
-      errEl.textContent = '✓ Check your email to confirm, then sign in.';
+      errEl.textContent = '✓ Account created — signing you in…';
     }
   } catch(e) {
+    console.error('AUTH error:', e);
     btn.disabled = false;
     btn.textContent = loginMode === 'signin' ? 'Sign In' : 'Create Account';
     errEl.textContent = 'Error: ' + e.message;
