@@ -903,8 +903,13 @@ function renderBubbleMap(pid){
     const nd=document.createElement('div');
     nd.className=`bnode ${n.type}`;
     nd.style.cssText=`left:${nx}px;top:${ny}px`;
-    nd.innerHTML=`<div class="bnode-circle ${n.cls}">${n.icon}</div><div class="bnode-label">${esc(n.label)}</div>`;
-    if(n.url) nd.querySelector('.bnode-circle').onclick=()=>window.open(n.url,'_blank');
+    const clickable = n.url || n.type==='api' || n.type==='asset' || n.type==='path';
+    nd.innerHTML=`<div class="bnode-circle ${n.cls}" style="${clickable?'cursor:pointer':'cursor:default'}" title="${esc(n.tooltip||n.label)}">${n.icon}</div><div class="bnode-label">${esc(n.label)}</div>`;
+    const circle = nd.querySelector('.bnode-circle');
+    if(n.url) circle.onclick=()=>window.open(n.url,'_blank');
+    else if(n.type==='api') circle.onclick=()=>{copy(n.key||'','key');toast('Copied: '+n.label);};
+    else if(n.type==='asset') circle.onclick=()=>{if(n.assetData){const a=document.createElement('a');a.href=n.assetData;a.download=n.label;a.click();}else toast(n.label);};
+    else if(n.type==='path') circle.onclick=()=>{copy(n.key||'','path');toast('Copied path command');};
     canvas.appendChild(nd);
   });
 
