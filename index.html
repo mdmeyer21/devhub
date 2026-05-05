@@ -1181,11 +1181,11 @@ const editProject=pid=>openProjModal(pid);
 function saveProject(){
   const id=document.getElementById('pm-id').value, name=document.getElementById('pm-name').value.trim();
   if(!name){toast('Name required');return;}
-  const ps=getProjects(), existing=id?ps.find(p=>p.id===id):null;
+  const ps=getProjects(), existing=ps.find(p=>p.id===id);
   const tags=document.getElementById('pm-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
   const data={name,status:document.getElementById('pm-status').value,paths:collectPaths(),links:collectLinks(),socials:[..._editSocials],tags,goal:document.getElementById('pm-goal').value.trim()};
   if(existing){Object.assign(existing,data,{lastUpdated:now()});setProjects(ps);pushProject(existing);}
-  else{const p={id:uid(),checklist:[],notes:'',memoryFile:'',lastUpdated:now(),lastOpened:null,...data};p.memoryFile=memTemplate(p);ps.unshift(p);setProjects(ps);pushProject(p);}
+  else{const p={id,checklist:[],notes:'',memoryFile:'',lastUpdated:now(),lastOpened:null,...data};p.memoryFile=memTemplate(p);ps.unshift(p);setProjects(ps);pushProject(p);}
   closeModal('proj-modal'); renderProjects();
   if(curTab==='social')renderSocial();
   toast(existing?'Project updated':'Project created');
