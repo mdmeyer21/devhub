@@ -1023,31 +1023,28 @@ function detailAddItem(pid){
   p.checklist.push({id:uid(),text,done:false}); p.lastUpdated=now(); setProjects(ps); pushProject(p); openDetail(pid);
 }
 // ── BUBBLE MAP ────────────────────────────────────────
-function renderBubbleMap(pid){
+function renderBubbleMap(pid, cloudFiles){
   const canvas=document.getElementById('bubble-canvas');
   const svg=document.getElementById('bubble-svg');
   if(!canvas||!svg) return;
   const p=getProjects().find(x=>x.id===pid); if(!p) return;
   const apis=getAPIs().filter(a=>a.projectId===pid);
-  const assets=getAssets().filter(a=>a.projectId===pid).slice(0,6);
+  const assets=getAssets().filter(a=>a.projectId===pid).slice(0,4);
+  const files=(cloudFiles||_filesCache[pid]||[]).slice(0,8);
   const W=canvas.offsetWidth||600, H=canvas.offsetHeight||420;
   const cx=W/2, cy=H/2;
 
-  // build nodes list
   const nodes=[];
   (p.socials||[]).forEach(sid=>{const pl=platMap[sid];if(pl)nodes.push({type:'social',label:pl.name,icon:pl.icon,cls:sid,url:pl.url,tooltip:'Open '+pl.name});});
-  apis.forEach(a=>nodes.push({type:'api',label:a.name,icon:'🔑',cls:'',key:a.key||'',tooltip:'Click to copy API key'}));
+  apis.forEach(a=>nodes.push({type:'api',label:a.name,icon:'🔑',cls:'',key:a.key||'',tooltip:'Click to copy key'}));
   (p.links||[]).forEach(l=>nodes.push({type:'link',label:l.label,icon:'🔗',cls:'',url:l.url,tooltip:'Open '+l.label}));
   assets.forEach(a=>nodes.push({type:'asset',label:a.name,icon:a.type&&a.type.startsWith('image/')&&a.data?'🖼':'📄',cls:'',assetData:a.data,tooltip:'Download '+a.name}));
-  if(p.path) nodes.push({type:'path',label:'Local Path',icon:'📁',cls:'',key:'claude "'+p.path+'"',tooltip:'Click to copy Claude command'});
+  files.forEach(f=>nodes.push({type:'file',label:f.name,icon:fileIcon(f.name),cls:'',filePath:f.path,tooltip:'Download '+f.name}));
 
-  // position nodes in a circle
   const r=Math.min(W,H)*0.33;
-  const lines=[];
   svg.innerHTML='';
   canvas.querySelectorAll('.bnode').forEach(n=>n.remove());
 
-  // center node
   const cNode=document.createElement('div');
   cNode.className='bnode center';
   cNode.style.cssText=`left:${cx}px;top:${cy}px`;
@@ -1058,31 +1055,30 @@ function renderBubbleMap(pid){
     const angle=(2*Math.PI/nodes.length)*i - Math.PI/2;
     const nx=cx+r*Math.cos(angle), ny=cy+r*Math.sin(angle);
 
-    // SVG line
     const line=document.createElementNS('http://www.w3.org/2000/svg','line');
-    line.setAttribute('x1',cx); line.setAttribute('y1',cy);
-    line.setAttribute('x2',nx); line.setAttribute('y2',ny);
+    line.setAttribute('x1',cx);line.setAttribute('y1',cy);
+    line.setAttribute('x2',nx);line.setAttribute('y2',ny);
     line.setAttribute('class','bubble-line');
+    if(n.type==='file') line.setAttribute('stroke','rgba(166,227,161,.5)');
     svg.appendChild(line);
 
-    // node div
     const nd=document.createElement('div');
     nd.className=`bnode ${n.type}`;
     nd.style.cssText=`left:${nx}px;top:${ny}px`;
-    const clickable = n.url || n.type==='api' || n.type==='asset' || n.type==='path';
-    nd.innerHTML=`<div class="bnode-circle ${n.cls}" style="${clickable?'cursor:pointer':'cursor:default'}" title="${esc(n.tooltip||n.label)}">${n.icon}</div><div class="bnode-label">${esc(n.label)}</div>`;
-    const circle = nd.querySelector('.bnode-circle');
+    const clickable=n.url||n.type==='api'||n.type==='asset'||n.type==='file';
+    nd.innerHTML=`<div class="bnode-circle ${n.cls}" style="${clickable?'cursor:pointer':'cursor:default'}" title="${esc(n.tooltip||n.label)}">${n.icon}</div><div class="bnode-label">${esc(n.label.length>12?n.label.slice(0,11)+'…':n.label)}</div>`;
+    const circle=nd.querySelector('.bnode-circle');
     if(n.url) circle.onclick=()=>window.open(n.url,'_blank');
     else if(n.type==='api') circle.onclick=()=>{copy(n.key||'','key');toast('Copied: '+n.label);};
     else if(n.type==='asset') circle.onclick=()=>{if(n.assetData){const a=document.createElement('a');a.href=n.assetData;a.download=n.label;a.click();}else toast(n.label);};
-    else if(n.type==='path') circle.onclick=()=>{copy(n.key||'','path');toast('Copied path command');};
+    else if(n.type==='file') circle.onclick=()=>openFileUrl(n.filePath,n.label);
     canvas.appendChild(nd);
   });
 
   if(!nodes.length){
     const msg=document.createElement('div');
     msg.style.cssText='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px';
-    msg.textContent='Add social platforms, API keys, or links to see connections here.';
+    msg.textContent='Add social platforms, API keys, links, or upload files to see connections here.';
     canvas.appendChild(msg);
   }
 }
