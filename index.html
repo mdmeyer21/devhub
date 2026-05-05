@@ -1150,15 +1150,19 @@ async function deleteModalFile(pid,filename){
 
 async function onModalFileInput(e){
   const pid=document.getElementById('pm-id').value; if(!pid)return;
-  const files=[...e.target.files]; if(!files.length)return;
-  document.getElementById('pm-files-badge').textContent='(uploading…)';
-  for(const f of files){
-    toast('Uploading '+f.name+'…');
-    await uploadProjectFile(pid,f);
+  const fileList=[...e.target.files]; if(!fileList.length)return;
+  const badge=document.getElementById('pm-files-badge');
+  badge.textContent=`(uploading ${fileList.length} file${fileList.length>1?'s':''}…)`;
+  let done=0;
+  for(const f of fileList){
+    // webkitRelativePath gives "foldername/sub/file.js" for folder uploads
+    const relName=f.webkitRelativePath||f.name;
+    toast(`Uploading ${relName}… (${++done}/${fileList.length})`);
+    await uploadProjectFile(pid,f,relName);
   }
   const updated=await listProjectFiles(pid);
   renderModalFiles(pid,updated);
-  toast(`✓ ${files.length} file${files.length>1?'s':''} uploaded`);
+  toast(`✓ ${done} file${done>1?'s':''} uploaded`);
   e.target.value='';
 }
 
