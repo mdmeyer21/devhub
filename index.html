@@ -1482,7 +1482,7 @@ document.addEventListener('click',e=>{if(!gsEl.contains(e.target)&&!sdEl.contain
 let _mapRaf=null, _mapDrag=null;
 function stopMapSim(){if(_mapRaf){cancelAnimationFrame(_mapRaf);_mapRaf=null;}}
 
-function renderMapTab(){
+async function renderMapTab(){
   stopMapSim();
   const canvas=document.getElementById('map-canvas');
   const svg=document.getElementById('map-svg');
@@ -1491,6 +1491,9 @@ function renderMapTab(){
   svg.innerHTML='';
   const projects=getProjects(), apis=getAPIs();
   const W=canvas.offsetWidth||900, H=canvas.offsetHeight||560;
+  // pre-load cloud files for all projects
+  const allFiles={};
+  await Promise.all(projects.map(async p=>{ allFiles[p.id]=await listProjectFiles(p.id); }));
 
   if(!projects.length){
     const m=document.createElement('div');
