@@ -378,11 +378,12 @@ textarea.mem:focus{border-color:var(--accent)}
       </div>
     </div>
     <div class="fg">
-      <label>Local Path (for Claude Code)</label>
-      <div id="path-drop-zone">
-        <input id="pm-path" placeholder="Type path or drag your project folder here…" style="border:none;background:none;width:100%;outline:none;padding:4px 6px;color:var(--text);font-size:13px">
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Drag any file or folder from your project — path fills automatically</div>
+      <label style="display:flex;align-items:center;justify-content:space-between;text-transform:uppercase;letter-spacing:.4px;font-size:11px">
+        <span>Files & Folders (for Claude Code)</span>
+        <button type="button" class="btn xs" onclick="addPathRow()">+ Add File</button>
+      </label>
+      <div id="pm-paths" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">Drag folders into each row — add as many files as you need</div>
     </div>
     <div class="fg">
       <label style="display:flex;align-items:center;justify-content:space-between;text-transform:uppercase;letter-spacing:.4px;font-size:11px">
