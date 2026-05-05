@@ -1306,15 +1306,19 @@ gsEl.addEventListener('input',function(){
   sdEl.style.display='block';
 });
 document.addEventListener('click',e=>{if(!gsEl.contains(e.target)&&!sdEl.contains(e.target))sdEl.style.display='none';});
-// ── GLOBAL MAP ────────────────────────────────────────
+// ── GLOBAL MAP (force-directed physics) ───────────────
+let _mapRaf=null, _mapDrag=null;
+function stopMapSim(){if(_mapRaf){cancelAnimationFrame(_mapRaf);_mapRaf=null;}}
+
 function renderMapTab(){
+  stopMapSim();
   const canvas=document.getElementById('map-canvas');
   const svg=document.getElementById('map-svg');
   if(!canvas||!svg) return;
   canvas.querySelectorAll('.map-node').forEach(n=>n.remove());
   svg.innerHTML='';
   const projects=getProjects(), apis=getAPIs();
-  const W=canvas.offsetWidth||900, H=canvas.offsetHeight||600;
+  const W=canvas.offsetWidth||900, H=canvas.offsetHeight||560;
 
   if(!projects.length){
     const m=document.createElement('div');
@@ -1324,22 +1328,28 @@ function renderMapTab(){
     canvas.appendChild(m); return;
   }
 
-  // project positions — circle layout
-  const projPos={};
-  const r=Math.min(W,H)*(projects.length===1?0:0.3);
-  projects.forEach((p,i)=>{
-    const angle=(2*Math.PI/projects.length)*i-Math.PI/2;
-    projPos[p.id]={x:W/2+r*Math.cos(angle), y:H/2+r*Math.sin(angle)};
+  // ── build node/edge lists ─────────────────────────────
+  const nodes=[], edges=[];
+  const nodeById={};
+
+  function mkNode(id, opts){
+    const n={id, x:W/2+(Math.random()-.5)*260, y:H/2+(Math.random()-.5)*200,
+      vx:0, vy:0, mass:opts.mass||1, el:null, lineEls:[], ...opts};
+    nodes.push(n); nodeById[id]=n; return n;
+  }
+
+  // project nodes
+  projects.forEach(p=>{
+    mkNode('proj:'+p.id,{kind:'proj',proj:p,mass:2.5,radius:44,label:p.name,
+      initials:p.name.slice(0,2).toUpperCase(), onclick:()=>openDetail(p.id)});
   });
 
-  // map socials → which projects use them
+  // map socials & apis
   const socialPids={};
   projects.forEach(p=>(p.socials||[]).forEach(sid=>{
     if(!socialPids[sid])socialPids[sid]=[];
     socialPids[sid].push(p.id);
   }));
-
-  // map api name → which projects use them
   const apiPids={};
   apis.forEach(a=>{
     if(!a.projectId) return;
@@ -1348,74 +1358,130 @@ function renderMapTab(){
     if(!apiPids[k].pids.includes(a.projectId))apiPids[k].pids.push(a.projectId);
   });
 
-  // per-project orbit slots
-  const orbitSlots={};
-  projects.forEach(p=>orbitSlots[p.id]=[]);
-  Object.entries(socialPids).forEach(([sid,pids])=>{ if(pids.length===1) orbitSlots[pids[0]].push({kind:'social',sid}); });
-  Object.values(apiPids).forEach(({name,key,pids})=>{ if(pids.length===1) orbitSlots[pids[0]].push({kind:'api',name,key}); });
+  // social nodes + edges
+  Object.entries(socialPids).forEach(([sid,pids])=>{
+    const pl=platMap[sid]; if(!pl) return;
+    const nid='soc:'+sid;
+    if(!nodeById[nid]) mkNode(nid,{kind:'social',sid,pl,mass:0.8,radius:22,label:pl.name,icon:pl.icon,onclick:()=>window.open(pl.url,'_blank')});
+    pids.forEach(pid=>edges.push({a:'proj:'+pid, b:nid, color:'rgba(139,213,202,.4)', rest:120}));
+  });
 
-  function orbitPos(pid,idx,total){
-    const pos=projPos[pid], angle=(2*Math.PI/Math.max(total,1))*idx-Math.PI/2, or=105;
-    return {x:pos.x+or*Math.cos(angle), y:pos.y+or*Math.sin(angle)};
-  }
-  function addLine(x1,y1,x2,y2,color){
+  // api nodes + edges
+  Object.values(apiPids).forEach(({name,key,pids})=>{
+    const nid='api:'+name.toLowerCase();
+    if(!nodeById[nid]) mkNode(nid,{kind:'api',name,key,mass:0.8,radius:22,label:name,icon:'🔑',onclick:()=>{copy(key,'key');toast('Copied: '+name);}});
+    pids.forEach(pid=>edges.push({a:'proj:'+pid, b:nid, color:'rgba(249,226,175,.35)', rest:120}));
+  });
+
+  // ── build DOM elements ────────────────────────────────
+  // SVG lines (one per edge)
+  edges.forEach(e=>{
     const l=document.createElementNS('http://www.w3.org/2000/svg','line');
-    l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);
-    l.setAttribute('stroke',color||'var(--border)');l.setAttribute('stroke-width','1.5');l.setAttribute('opacity','.5');
-    svg.appendChild(l);
+    l.setAttribute('stroke',e.color||'var(--border)');
+    l.setAttribute('stroke-width','1.5');
+    l.setAttribute('opacity','.7');
+    svg.appendChild(l); e.lineEl=l;
+  });
+
+  // node divs
+  nodes.forEach(n=>{
+    const el=document.createElement('div');
+    el.className='map-node';
+    el.style.cssText=`position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;z-index:2;user-select:none;will-change:transform`;
+    if(n.kind==='proj'){
+      el.innerHTML=`<div class="bnode-circle center" style="cursor:pointer;width:${n.radius*2}px;height:${n.radius*2}px;font-size:15px;font-weight:700">${esc(n.initials)}</div><div class="bnode-label" style="max-width:90px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(n.label)}</div>`;
+    } else if(n.kind==='social'){
+      el.innerHTML=`<div class="bnode-circle ${n.sid}" style="cursor:pointer;width:${n.radius*2}px;height:${n.radius*2}px;font-size:18px">${n.icon}</div><div class="bnode-label">${esc(n.label)}</div>`;
+    } else {
+      el.innerHTML=`<div class="bnode-circle api" style="cursor:pointer;width:${n.radius*2}px;height:${n.radius*2}px;font-size:18px">${n.icon}</div><div class="bnode-label">${esc(n.label)}</div>`;
+    }
+    const circle=el.querySelector('.bnode-circle');
+    if(n.onclick) circle.addEventListener('click',e=>{if(!_mapDrag||_mapDrag.moved<3)n.onclick();});
+
+    // drag
+    circle.addEventListener('mousedown',ev=>{
+      ev.preventDefault();
+      _mapDrag={node:n,ox:ev.clientX-n.x,oy:ev.clientY-n.y,moved:0};
+      n.vx=0;n.vy=0;n.pinned=true;
+    });
+    canvas.appendChild(el); n.el=el;
+  });
+
+  // global mouse events for drag
+  function onMouseMove(ev){
+    if(!_mapDrag) return;
+    const rect=canvas.getBoundingClientRect();
+    const nx=ev.clientX-rect.left, ny=ev.clientY-rect.top;
+    _mapDrag.moved=(_mapDrag.moved||0)+1;
+    _mapDrag.node.x=Math.max(20,Math.min(W-20,nx));
+    _mapDrag.node.y=Math.max(20,Math.min(H-20,ny));
+    _mapDrag.node.vx=0;_mapDrag.node.vy=0;
   }
-  function addNode(x,y,circleClass,typeClass,icon,label,onclick){
-    const nd=document.createElement('div');
-    nd.className=`bnode ${typeClass} map-node`;
-    nd.style.cssText=`left:${x}px;top:${y}px;position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;z-index:2`;
-    nd.innerHTML=`<div class="bnode-circle ${circleClass}" style="cursor:${onclick?'pointer':'default'}">${icon}</div><div class="bnode-label">${esc(label)}</div>`;
-    if(onclick) nd.querySelector('.bnode-circle').onclick=onclick;
-    canvas.appendChild(nd);
+  function onMouseUp(){if(_mapDrag){_mapDrag.node.pinned=false;_mapDrag=null;}}
+  canvas.addEventListener('mousemove',onMouseMove);
+  canvas.addEventListener('mouseup',onMouseUp);
+  canvas.addEventListener('mouseleave',onMouseUp);
+
+  // ── physics simulation ─────────────────────────────────
+  const REPULSION=4500, SPRING_K=0.04, DAMPING=0.72, GRAVITY=0.025, JIGGLE=0.18;
+
+  function tick(){
+    const N=nodes.length;
+    // repulsion
+    for(let i=0;i<N;i++){
+      for(let j=i+1;j<N;j++){
+        const a=nodes[i], b=nodes[j];
+        let dx=b.x-a.x, dy=b.y-a.y;
+        const dist2=dx*dx+dy*dy+1;
+        const dist=Math.sqrt(dist2);
+        const minD=(a.radius||22)+(b.radius||22)+20;
+        const force=REPULSION/dist2;
+        const fx=force*dx/dist, fy=force*dy/dist;
+        if(!a.pinned){a.vx-=fx/a.mass;a.vy-=fy/a.mass;}
+        if(!b.pinned){b.vx+=fx/b.mass;b.vy+=fy/b.mass;}
+        // overlap push
+        if(dist<minD){
+          const push=(minD-dist)*0.5;
+          const px=push*dx/dist, py=push*dy/dist;
+          if(!a.pinned){a.x-=px;a.y-=py;}
+          if(!b.pinned){b.x+=px;b.y+=py;}
+        }
+      }
+    }
+    // spring attraction on edges
+    edges.forEach(e=>{
+      const a=nodeById[e.a], b=nodeById[e.b]; if(!a||!b) return;
+      const dx=b.x-a.x, dy=b.y-a.y, dist=Math.sqrt(dx*dx+dy*dy)+0.001;
+      const stretch=dist-(e.rest||120);
+      const fx=SPRING_K*stretch*dx/dist, fy=SPRING_K*stretch*dy/dist;
+      if(!a.pinned){a.vx+=fx/a.mass;a.vy+=fy/a.mass;}
+      if(!b.pinned){b.vx-=fx/b.mass;b.vy-=fy/b.mass;}
+    });
+    // center gravity + jiggle + damping + boundary
+    nodes.forEach(n=>{
+      if(n.pinned) return;
+      n.vx+=(W/2-n.x)*GRAVITY;
+      n.vy+=(H/2-n.y)*GRAVITY;
+      n.vx+=(Math.random()-.5)*JIGGLE;
+      n.vy+=(Math.random()-.5)*JIGGLE;
+      n.vx*=DAMPING; n.vy*=DAMPING;
+      n.x+=n.vx; n.y+=n.vy;
+      n.x=Math.max(n.radius+8,Math.min(W-n.radius-8,n.x));
+      n.y=Math.max(n.radius+8,Math.min(H-n.radius-8,n.y));
+    });
+    // render
+    nodes.forEach(n=>{
+      n.el.style.left=n.x+'px';
+      n.el.style.top=n.y+'px';
+    });
+    edges.forEach(e=>{
+      const a=nodeById[e.a], b=nodeById[e.b]; if(!a||!b) return;
+      e.lineEl.setAttribute('x1',a.x);e.lineEl.setAttribute('y1',a.y);
+      e.lineEl.setAttribute('x2',b.x);e.lineEl.setAttribute('y2',b.y);
+    });
+    _mapRaf=requestAnimationFrame(tick);
   }
-
-  // draw project nodes
-  projects.forEach(p=>{
-    const pos=projPos[p.id];
-    addNode(pos.x,pos.y,'','center',esc(p.name.slice(0,2).toUpperCase()),p.name,()=>openDetail(p.id));
-  });
-
-  // orbit: unique socials
-  Object.entries(socialPids).forEach(([sid,pids])=>{
-    if(pids.length!==1) return;
-    const pl=platMap[sid]; if(!pl) return;
-    const pid=pids[0], slots=orbitSlots[pid], idx=slots.findIndex(s=>s.kind==='social'&&s.sid===sid);
-    const op=orbitPos(pid,idx,slots.length), pp=projPos[pid];
-    addLine(pp.x,pp.y,op.x,op.y);
-    addNode(op.x,op.y,sid,'social',pl.icon,pl.name,()=>window.open(pl.url,'_blank'));
-  });
-
-  // orbit: unique apis
-  Object.values(apiPids).forEach(({name,key,pids})=>{
-    if(pids.length!==1) return;
-    const pid=pids[0], slots=orbitSlots[pid], idx=slots.findIndex(s=>s.kind==='api'&&s.name===name);
-    const op=orbitPos(pid,idx,slots.length), pp=projPos[pid];
-    addLine(pp.x,pp.y,op.x,op.y);
-    addNode(op.x,op.y,'','api','🔑',name,()=>{copy(key,'key');toast('Copied: '+name);});
-  });
-
-  // shared socials — connector node between projects
-  Object.entries(socialPids).forEach(([sid,pids])=>{
-    if(pids.length<2) return;
-    const pl=platMap[sid]; if(!pl) return;
-    const mx=pids.reduce((s,pid)=>s+projPos[pid].x,0)/pids.length;
-    const my=pids.reduce((s,pid)=>s+projPos[pid].y,0)/pids.length;
-    pids.forEach(pid=>addLine(projPos[pid].x,projPos[pid].y,mx,my,'rgba(77,166,255,.5)'));
-    addNode(mx,my,sid,'social',pl.icon,pl.name,()=>window.open(pl.url,'_blank'));
-  });
-
-  // shared apis — connector node between projects
-  Object.values(apiPids).forEach(({name,key,pids})=>{
-    if(pids.length<2) return;
-    const mx=pids.reduce((s,pid)=>s+projPos[pid].x,0)/pids.length;
-    const my=pids.reduce((s,pid)=>s+projPos[pid].y,0)/pids.length;
-    pids.forEach(pid=>addLine(projPos[pid].x,projPos[pid].y,mx,my,'rgba(255,214,10,.5)'));
-    addNode(mx,my,'','api','🔑',name,()=>{copy(key,'key');toast('Copied: '+name);});
-  });
+  _mapRaf=requestAnimationFrame(tick);
 }
 
 function switchToTab(name){curTab=name;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));document.getElementById('tab-'+name).classList.add('on');document.querySelector(`nav button[data-tab="${name}"]`).classList.add('on');if(name==='social')renderSocial();}
