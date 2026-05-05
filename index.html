@@ -1484,7 +1484,16 @@ function renderMapTab(){
   _mapRaf=requestAnimationFrame(tick);
 }
 
-function switchToTab(name){curTab=name;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));document.getElementById('tab-'+name).classList.add('on');document.querySelector(`nav button[data-tab="${name}"]`).classList.add('on');if(name==='social')renderSocial();}
+function switchToTab(name){
+  if(curTab==='map'&&name!=='map') stopMapSim();
+  curTab=name;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));
+  document.getElementById('tab-'+name).classList.add('on');
+  document.querySelector(`nav button[data-tab="${name}"]`).classList.add('on');
+  if(name==='social') renderSocial();
+  if(name==='map') renderMapTab();
+}
 
 // ── BOOT ──────────────────────────────────────────────
 function bootSession(session){
