@@ -795,7 +795,7 @@ function renderProjects(searchQ) {
       ${links.length?`<div class="bubble-row">${links.map(l=>`<a class="chip link" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join('')}</div>`:''}
       ${socials.length?`<div class="bubble-row">${socials.map(sid=>{const pl=platMap[sid];return pl?`<a class="plat ${sid}" href="${esc(pl.url)}" target="_blank" rel="noopener">${pl.icon} ${pl.name}</a>`:''}).join('')}</div>`:''}
       ${projAPIs.length?`<div class="bubble-row">${projAPIs.map(a=>`<span class="chip api-chip" title="Click to copy" onclick="copy('${esc(a.key||'')}','${esc(a.name)}')">${esc(a.name)}</span>`).join('')}</div>`:''}
-      ${p.path?`<div class="mono-row"><span>claude "${esc(p.path)}"</span><button class="btn xs" onclick="copy('claude &quot;${esc(p.path)}&quot;','command')">copy</button></div>`:''}
+      ${(p.paths&&p.paths.length?p.paths:p.path?[{label:'',path:p.path}]:[]).map(f=>`<div class="mono-row">${f.label?`<span style="font-size:11px;color:var(--muted);white-space:nowrap">${esc(f.label)}</span>`:''}<span>claude "${esc(f.path)}"</span><button class="btn xs" onclick="copy('claude &quot;${esc(f.path)}&quot;','command')">copy</button></div>`).join('')}
       ${cl.length?`<div><div class="prog"><div class="prog-fill" style="width:${pct}%"></div></div><div class="cl" style="margin-top:6px">${clHtml}</div></div>`:`<div class="cl">${clHtml}</div>`}
       <textarea class="notes" placeholder="Quick notes…" onblur="saveNotes('${pid}',this.value)">${esc(p.notes||'')}</textarea>
       <div class="bubble-row">
