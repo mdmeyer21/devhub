@@ -984,6 +984,7 @@ async function openDetail(pid){
     <textarea class="mem" id="mem-${pid}" onblur="saveMem('${pid}',this.value)">${esc(p.memoryFile||memTemplate(p))}</textarea>
     <p style="font-size:11px;color:var(--muted);margin-top:5px">Drop the .md into a new Claude chat to resume exactly where you left off.</p>`;
   openModal('detail-modal');
+  setTimeout(()=>initDetailFileDrop(pid), 50);
   // load cloud files then render bubble map with them
   const files = await listProjectFiles(pid);
   renderDetailFiles(pid, files);
