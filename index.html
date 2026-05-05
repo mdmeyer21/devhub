@@ -388,10 +388,18 @@ textarea.mem:focus{border-color:var(--accent)}
     <div class="fg">
       <label style="display:flex;align-items:center;justify-content:space-between;text-transform:uppercase;letter-spacing:.4px;font-size:11px">
         <span>Files & Folders (for Claude Code)</span>
-        <button type="button" class="btn xs" onclick="addPathRow()">+ Add File</button>
+        <button type="button" class="btn xs" onclick="addPathRow()">+ Add Path</button>
       </label>
       <div id="pm-paths" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
       <div style="font-size:11px;color:var(--muted);margin-top:6px">Drag folders into each row — add as many files as you need</div>
+    </div>
+    <div class="fg" id="pm-files-section">
+      <label style="display:flex;align-items:center;justify-content:space-between;text-transform:uppercase;letter-spacing:.4px;font-size:11px">
+        <span>Cloud Files <span id="pm-files-badge" style="font-weight:400;color:var(--muted)"></span></span>
+        <label class="btn xs" style="cursor:pointer">+ Upload <input type="file" id="pm-file-input" multiple style="display:none" onchange="onModalFileInput(event)"></label>
+      </label>
+      <div class="file-upload-zone" id="pm-file-drop">Drop files here to upload to the cloud ☁️ — access from any device</div>
+      <div id="pm-files-list" style="margin-top:6px"></div>
     </div>
     <div class="fg">
       <label style="display:flex;align-items:center;justify-content:space-between;text-transform:uppercase;letter-spacing:.4px;font-size:11px">
