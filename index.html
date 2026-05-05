@@ -1018,15 +1018,27 @@ async function onDetailFileInput(e,pid){
   const fileList=[...e.target.files]; if(!fileList.length)return;
   let done=0;
   for(const f of fileList){
-    const relName=f.webkitRelativePath||f.name;
-    toast(`Uploading ${relName}… (${++done}/${fileList.length})`);
-    await uploadProjectFile(pid,f,relName);
+    toast(`Uploading ${f.name}… (${++done}/${fileList.length})`);
+    await uploadProjectFile(pid,f,f.name);
   }
   const updated=await listProjectFiles(pid);
   renderDetailFiles(pid,updated);
   renderBubbleMap(pid,updated);
   toast(`✓ ${done} file${done>1?'s':''} uploaded`);
   e.target.value='';
+}
+
+function initDetailFileDrop(pid){
+  const zone=document.getElementById('detail-file-drop'); if(!zone)return;
+  zone.ondragover=e=>{e.preventDefault();zone.classList.add('over');};
+  zone.ondragleave=()=>zone.classList.remove('over');
+  zone.ondrop=async e=>{
+    e.preventDefault();zone.classList.remove('over');
+    await uploadDroppedFiles(pid,e.dataTransfer,null,async(p,files)=>{
+      renderDetailFiles(p,files);
+      renderBubbleMap(p,files);
+    });
+  };
 }
 
 function detailAddItem(pid){
