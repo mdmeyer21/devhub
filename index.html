@@ -1166,10 +1166,8 @@ async function onModalFileInput(e){
   badge.textContent=`(uploading ${fileList.length} file${fileList.length>1?'s':''}…)`;
   let done=0;
   for(const f of fileList){
-    // webkitRelativePath gives "foldername/sub/file.js" for folder uploads
-    const relName=f.webkitRelativePath||f.name;
-    toast(`Uploading ${relName}… (${++done}/${fileList.length})`);
-    await uploadProjectFile(pid,f,relName);
+    toast(`Uploading ${f.name}… (${++done}/${fileList.length})`);
+    await uploadProjectFile(pid,f,f.name);
   }
   const updated=await listProjectFiles(pid);
   renderModalFiles(pid,updated);
