@@ -1212,11 +1212,10 @@ async function uploadDroppedFiles(pid,dataTransfer,badgeEl,refreshFn){
   if(!items.length)return;
   if(badgeEl)badgeEl.textContent=`(uploading ${items.length} file${items.length>1?'s':''}…)`;
   let done=0;
-  for(const {file,name} of items){
-    // skip files >50MB silently, warn on >10MB
-    if(file.size>50*1024*1024){toast('Skipped (>50MB): '+name);continue;}
-    toast(`Uploading ${name}… (${++done}/${items.length})`);
-    await uploadProjectFile(pid,file,name);
+  for(const {file} of items){
+    if(file.size>50*1024*1024){toast('Skipped (>50MB): '+file.name);continue;}
+    toast(`Uploading ${file.name}… (${++done}/${items.length})`);
+    await uploadProjectFile(pid,file,file.name);
   }
   const updated=await listProjectFiles(pid);
   refreshFn(pid,updated);
