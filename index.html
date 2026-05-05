@@ -1061,19 +1061,78 @@ function downloadMem(pid){
 // ── PROJECT CRUD ──────────────────────────────────────
 function openProjModal(pid){
   const p=pid?getProjects().find(x=>x.id===pid):null;
+  const modalPid=p?p.id:uid();
   document.getElementById('proj-modal-title').textContent=p?'Edit Project':'New Project';
-  document.getElementById('pm-id').value=p?p.id:'';
+  document.getElementById('pm-id').value=modalPid;
   document.getElementById('pm-name').value=p?p.name:'';
   document.getElementById('pm-status').value=p?p.status:'active';
   document.getElementById('pm-tags').value=p?(p.tags||[]).join(', '):'';
   document.getElementById('pm-goal').value=p?(p.goal||''):'';
   _editLinks=p?JSON.parse(JSON.stringify(p.links||[])):[];
   _editSocials=p?JSON.parse(JSON.stringify(p.socials||[])):[];
-  // migrate old single path to paths array
   const existingPaths=p?(p.paths||[]):[];
   if(!existingPaths.length&&p&&p.path) _editPaths=[{label:'Main',path:p.path}];
   else _editPaths=JSON.parse(JSON.stringify(existingPaths));
   renderLinkEditor(); renderPlatPicker(); renderPathEditor(); openModal('proj-modal');
+  // load cloud files
+  document.getElementById('pm-files-badge').textContent='';
+  document.getElementById('pm-files-list').innerHTML='<div style="font-size:11px;color:var(--muted);padding:4px 0">Loading…</div>';
+  listProjectFiles(modalPid).then(files=>renderModalFiles(modalPid,files));
+  initModalFileDrop(modalPid);
+}
+
+function renderModalFiles(pid,files){
+  const badge=document.getElementById('pm-files-badge');
+  const list=document.getElementById('pm-files-list');
+  if(!badge||!list)return;
+  badge.textContent=files.length?`(${files.length})`:'';
+  if(!files.length){list.innerHTML='<div style="font-size:11px;color:var(--muted);padding:4px 0">No files uploaded yet.</div>';return;}
+  list.innerHTML=files.map(f=>`
+    <div class="file-item">
+      <span class="file-item-icon">${fileIcon(f.name)}</span>
+      <span class="file-item-name">${esc(f.name)}</span>
+      <span class="file-item-size">${fmtSize(f.size)}</span>
+      <button class="btn xs" onclick="openFileUrl('${esc(f.path)}','${esc(f.name)}')">↓</button>
+      <button class="btn xs danger" onclick="deleteModalFile('${esc(pid)}','${esc(f.name)}')">✕</button>
+    </div>`).join('');
+}
+
+async function deleteModalFile(pid,filename){
+  if(!confirm('Delete '+filename+'?'))return;
+  await deleteProjectFile(pid,filename);
+  const files=await listProjectFiles(pid);
+  renderModalFiles(pid,files);
+  toast('Deleted '+filename);
+}
+
+async function onModalFileInput(e){
+  const pid=document.getElementById('pm-id').value; if(!pid)return;
+  const files=[...e.target.files]; if(!files.length)return;
+  document.getElementById('pm-files-badge').textContent='(uploading…)';
+  for(const f of files){
+    toast('Uploading '+f.name+'…');
+    await uploadProjectFile(pid,f);
+  }
+  const updated=await listProjectFiles(pid);
+  renderModalFiles(pid,updated);
+  toast(`✓ ${files.length} file${files.length>1?'s':''} uploaded`);
+  e.target.value='';
+}
+
+function initModalFileDrop(pid){
+  const zone=document.getElementById('pm-file-drop'); if(!zone)return;
+  zone.onclick=()=>document.getElementById('pm-file-input').click();
+  zone.ondragover=e=>{e.preventDefault();zone.classList.add('over');};
+  zone.ondragleave=()=>zone.classList.remove('over');
+  zone.ondrop=async e=>{
+    e.preventDefault();zone.classList.remove('over');
+    const files=[...e.dataTransfer.files];if(!files.length)return;
+    document.getElementById('pm-files-badge').textContent='(uploading…)';
+    for(const f of files){toast('Uploading '+f.name+'…');await uploadProjectFile(pid,f);}
+    const updated=await listProjectFiles(pid);
+    renderModalFiles(pid,updated);
+    toast(`✓ ${files.length} file${files.length>1?'s':''} uploaded`);
+  };
 }
 const editProject=pid=>openProjModal(pid);
 
