@@ -1266,6 +1266,118 @@ gsEl.addEventListener('input',function(){
   sdEl.style.display='block';
 });
 document.addEventListener('click',e=>{if(!gsEl.contains(e.target)&&!sdEl.contains(e.target))sdEl.style.display='none';});
+// ── GLOBAL MAP ────────────────────────────────────────
+function renderMapTab(){
+  const canvas=document.getElementById('map-canvas');
+  const svg=document.getElementById('map-svg');
+  if(!canvas||!svg) return;
+  canvas.querySelectorAll('.map-node').forEach(n=>n.remove());
+  svg.innerHTML='';
+  const projects=getProjects(), apis=getAPIs();
+  const W=canvas.offsetWidth||900, H=canvas.offsetHeight||600;
+
+  if(!projects.length){
+    const m=document.createElement('div');
+    m.className='map-node';
+    m.style.cssText='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px';
+    m.textContent='No projects yet — add some to see the map.';
+    canvas.appendChild(m); return;
+  }
+
+  // project positions — circle layout
+  const projPos={};
+  const r=Math.min(W,H)*(projects.length===1?0:0.3);
+  projects.forEach((p,i)=>{
+    const angle=(2*Math.PI/projects.length)*i-Math.PI/2;
+    projPos[p.id]={x:W/2+r*Math.cos(angle), y:H/2+r*Math.sin(angle)};
+  });
+
+  // map socials → which projects use them
+  const socialPids={};
+  projects.forEach(p=>(p.socials||[]).forEach(sid=>{
+    if(!socialPids[sid])socialPids[sid]=[];
+    socialPids[sid].push(p.id);
+  }));
+
+  // map api name → which projects use them
+  const apiPids={};
+  apis.forEach(a=>{
+    if(!a.projectId) return;
+    const k=a.name.toLowerCase().trim();
+    if(!apiPids[k])apiPids[k]={name:a.name,key:a.key||'',pids:[]};
+    if(!apiPids[k].pids.includes(a.projectId))apiPids[k].pids.push(a.projectId);
+  });
+
+  // per-project orbit slots
+  const orbitSlots={};
+  projects.forEach(p=>orbitSlots[p.id]=[]);
+  Object.entries(socialPids).forEach(([sid,pids])=>{ if(pids.length===1) orbitSlots[pids[0]].push({kind:'social',sid}); });
+  Object.values(apiPids).forEach(({name,key,pids})=>{ if(pids.length===1) orbitSlots[pids[0]].push({kind:'api',name,key}); });
+
+  function orbitPos(pid,idx,total){
+    const pos=projPos[pid], angle=(2*Math.PI/Math.max(total,1))*idx-Math.PI/2, or=105;
+    return {x:pos.x+or*Math.cos(angle), y:pos.y+or*Math.sin(angle)};
+  }
+  function addLine(x1,y1,x2,y2,color){
+    const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+    l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);
+    l.setAttribute('stroke',color||'var(--border)');l.setAttribute('stroke-width','1.5');l.setAttribute('opacity','.5');
+    svg.appendChild(l);
+  }
+  function addNode(x,y,circleClass,typeClass,icon,label,onclick){
+    const nd=document.createElement('div');
+    nd.className=`bnode ${typeClass} map-node`;
+    nd.style.cssText=`left:${x}px;top:${y}px;position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;z-index:2`;
+    nd.innerHTML=`<div class="bnode-circle ${circleClass}" style="cursor:${onclick?'pointer':'default'}">${icon}</div><div class="bnode-label">${esc(label)}</div>`;
+    if(onclick) nd.querySelector('.bnode-circle').onclick=onclick;
+    canvas.appendChild(nd);
+  }
+
+  // draw project nodes
+  projects.forEach(p=>{
+    const pos=projPos[p.id];
+    addNode(pos.x,pos.y,'','center',esc(p.name.slice(0,2).toUpperCase()),p.name,()=>openDetail(p.id));
+  });
+
+  // orbit: unique socials
+  Object.entries(socialPids).forEach(([sid,pids])=>{
+    if(pids.length!==1) return;
+    const pl=platMap[sid]; if(!pl) return;
+    const pid=pids[0], slots=orbitSlots[pid], idx=slots.findIndex(s=>s.kind==='social'&&s.sid===sid);
+    const op=orbitPos(pid,idx,slots.length), pp=projPos[pid];
+    addLine(pp.x,pp.y,op.x,op.y);
+    addNode(op.x,op.y,sid,'social',pl.icon,pl.name,()=>window.open(pl.url,'_blank'));
+  });
+
+  // orbit: unique apis
+  Object.values(apiPids).forEach(({name,key,pids})=>{
+    if(pids.length!==1) return;
+    const pid=pids[0], slots=orbitSlots[pid], idx=slots.findIndex(s=>s.kind==='api'&&s.name===name);
+    const op=orbitPos(pid,idx,slots.length), pp=projPos[pid];
+    addLine(pp.x,pp.y,op.x,op.y);
+    addNode(op.x,op.y,'','api','🔑',name,()=>{copy(key,'key');toast('Copied: '+name);});
+  });
+
+  // shared socials — connector node between projects
+  Object.entries(socialPids).forEach(([sid,pids])=>{
+    if(pids.length<2) return;
+    const pl=platMap[sid]; if(!pl) return;
+    const mx=pids.reduce((s,pid)=>s+projPos[pid].x,0)/pids.length;
+    const my=pids.reduce((s,pid)=>s+projPos[pid].y,0)/pids.length;
+    pids.forEach(pid=>addLine(projPos[pid].x,projPos[pid].y,mx,my,'rgba(77,166,255,.5)'));
+    addNode(mx,my,sid,'social',pl.icon,pl.name,()=>window.open(pl.url,'_blank'));
+  });
+
+  // shared apis — connector node between projects
+  Object.values(apiPids).forEach(({name,key,pids})=>{
+    if(pids.length<2) return;
+    const mx=pids.reduce((s,pid)=>s+projPos[pid].x,0)/pids.length;
+    const my=pids.reduce((s,pid)=>s+projPos[pid].y,0)/pids.length;
+    pids.forEach(pid=>addLine(projPos[pid].x,projPos[pid].y,mx,my,'rgba(255,214,10,.5)'));
+    addNode(mx,my,'','api','🔑',name,()=>{copy(key,'key');toast('Copied: '+name);});
+  });
+}
+
 function switchToTab(name){curTab=name;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));document.getElementById('tab-'+name).classList.add('on');document.querySelector(`nav button[data-tab="${name}"]`).classList.add('on');if(name==='social')renderSocial();}
 
 // ── BOOT ──────────────────────────────────────────────
