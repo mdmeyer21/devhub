@@ -606,12 +606,13 @@ async function listProjectFiles(pid){
   return _filesCache[pid];
 }
 
-async function uploadProjectFile(pid,file){
+async function uploadProjectFile(pid,file,relName){
   if(!supa||!currentUser)return null;
-  const path=`${currentUser.id}/${pid}/${file.name}`;
+  const name=relName||file.name;
+  const path=`${currentUser.id}/${pid}/${name}`;
   const{error}=await supa.storage.from(BUCKET).upload(path,file,{upsert:true});
   if(error){toast('Upload failed: '+error.message);return null;}
-  return{name:file.name,size:file.size,type:file.type,path};
+  return{name,size:file.size,type:file.type,path};
 }
 
 async function deleteProjectFile(pid,filename){
