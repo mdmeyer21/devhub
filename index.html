@@ -992,12 +992,15 @@ function openProjModal(pid){
   document.getElementById('pm-id').value=p?p.id:'';
   document.getElementById('pm-name').value=p?p.name:'';
   document.getElementById('pm-status').value=p?p.status:'active';
-  document.getElementById('pm-path').value=p?(p.path||''):'';
   document.getElementById('pm-tags').value=p?(p.tags||[]).join(', '):'';
   document.getElementById('pm-goal').value=p?(p.goal||''):'';
   _editLinks=p?JSON.parse(JSON.stringify(p.links||[])):[];
   _editSocials=p?JSON.parse(JSON.stringify(p.socials||[])):[];
-  renderLinkEditor(); renderPlatPicker(); openModal('proj-modal');
+  // migrate old single path to paths array
+  const existingPaths=p?(p.paths||[]):[];
+  if(!existingPaths.length&&p&&p.path) _editPaths=[{label:'Main',path:p.path}];
+  else _editPaths=JSON.parse(JSON.stringify(existingPaths));
+  renderLinkEditor(); renderPlatPicker(); renderPathEditor(); openModal('proj-modal');
 }
 const editProject=pid=>openProjModal(pid);
 
