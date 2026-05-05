@@ -1548,6 +1548,16 @@ async function renderMapTab(){
     pids.forEach(pid=>edges.push({a:'proj:'+pid, b:nid, color:'rgba(249,226,175,.35)', rest:120}));
   });
 
+  // file nodes + edges (per-project, up to 6 each)
+  projects.forEach(p=>{
+    const pFiles=(allFiles[p.id]||[]).slice(0,6);
+    pFiles.forEach(f=>{
+      const nid='file:'+p.id+':'+f.name;
+      mkNode(nid,{kind:'file',file:f,mass:0.5,radius:18,label:f.name.length>12?f.name.slice(0,11)+'…':f.name,icon:fileIcon(f.name),onclick:()=>openFileUrl(f.path,f.name)});
+      edges.push({a:'proj:'+p.id, b:nid, color:'rgba(166,227,161,.35)', rest:90});
+    });
+  });
+
   // ── build DOM elements ────────────────────────────────
   // SVG lines (one per edge)
   edges.forEach(e=>{
