@@ -575,6 +575,63 @@ async function migrateIfNeeded() {
   toast('✓ Local data imported to Supabase');
 }
 
+// ── STORAGE ───────────────────────────────────────────
+const BUCKET = 'devhub-files';
+const _filesCache = {};
+
+function fileIcon(name){
+  const ext=(name||'').split('.').pop().toLowerCase();
+  if(['jpg','jpeg','png','gif','webp','svg','ico'].includes(ext))return'🖼';
+  if(['mp4','mov','avi','webm'].includes(ext))return'🎬';
+  if(['mp3','wav','ogg','m4a'].includes(ext))return'🎵';
+  if(['js','ts','jsx','tsx','mjs','cjs'].includes(ext))return'📜';
+  if(['css','scss','sass'].includes(ext))return'🎨';
+  if(['html','htm'].includes(ext))return'🌐';
+  if(['json','yaml','yml','toml','env'].includes(ext))return'⚙️';
+  if(['md','txt'].includes(ext))return'📝';
+  if(['zip','tar','gz','rar','7z'].includes(ext))return'🗜';
+  if(['pdf'].includes(ext))return'📋';
+  return'📄';
+}
+function fmtSize(b){if(!b)return'';if(b<1024)return b+'B';if(b<1048576)return Math.round(b/1024)+'KB';return(b/1048576).toFixed(1)+'MB';}
+
+async function listProjectFiles(pid){
+  if(!supa||!currentUser)return[];
+  const prefix=`${currentUser.id}/${pid}`;
+  const{data,error}=await supa.storage.from(BUCKET).list(prefix,{limit:100,sortBy:{column:'name',order:'asc'}});
+  if(error||!data)return[];
+  const files=data.filter(f=>f.name&&f.name!=='.emptyFolderPlaceholder');
+  _filesCache[pid]=files.map(f=>({name:f.name,size:f.metadata?.size||0,type:f.metadata?.mimetype||'',path:`${prefix}/${f.name}`}));
+  return _filesCache[pid];
+}
+
+async function uploadProjectFile(pid,file){
+  if(!supa||!currentUser)return null;
+  const path=`${currentUser.id}/${pid}/${file.name}`;
+  const{error}=await supa.storage.from(BUCKET).upload(path,file,{upsert:true});
+  if(error){toast('Upload failed: '+error.message);return null;}
+  return{name:file.name,size:file.size,type:file.type,path};
+}
+
+async function deleteProjectFile(pid,filename){
+  if(!supa||!currentUser)return;
+  const path=`${currentUser.id}/${pid}/${filename}`;
+  await supa.storage.from(BUCKET).remove([path]);
+  if(_filesCache[pid])_filesCache[pid]=_filesCache[pid].filter(f=>f.name!==filename);
+}
+
+async function getFileUrl(filePath){
+  if(!supa)return null;
+  const{data,error}=await supa.storage.from(BUCKET).createSignedUrl(filePath,3600);
+  return error?null:data.signedUrl;
+}
+
+async function openFileUrl(filePath,filename){
+  const url=await getFileUrl(filePath);
+  if(!url){toast('Could not get file URL');return;}
+  const a=document.createElement('a');a.href=url;a.target='_blank';a.download=filename;a.click();
+}
+
 const getProjects = () => DB.projects;
 const setProjects = ps => { DB.projects = ps; };
 const getAPIs     = () => DB.apis;
