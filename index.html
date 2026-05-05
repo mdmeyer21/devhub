@@ -634,6 +634,41 @@ document.querySelectorAll('[data-pf]').forEach(b=>b.addEventListener('click',()=
   b.classList.add('on'); renderProjects();
 }));
 
+// ── PATH EDITOR ───────────────────────────────────────
+let _editPaths = [];
+
+function renderPathEditor(){
+  const c=document.getElementById('pm-paths'); if(!c) return;
+  if(!_editPaths.length){c.innerHTML='<div style="font-size:12px;color:var(--muted);padding:4px 0">No files added yet.</div>';return;}
+  c.innerHTML=_editPaths.map((p,i)=>`
+    <div style="display:grid;grid-template-columns:140px 1fr auto;gap:6px;align-items:center" id="path-row-${i}">
+      <input placeholder="Label (e.g. Frontend)" value="${esc(p.label)}" oninput="_editPaths[${i}].label=this.value" style="padding:7px 9px;border:1px solid var(--border);border-radius:var(--rs);font-size:12px;outline:none;background:var(--surface2);color:var(--text)">
+      <div style="border:1px dashed var(--border);border-radius:var(--rs);padding:3px 4px;transition:all .15s" id="pdr-${i}">
+        <input placeholder="Path or drag folder here…" value="${esc(p.path)}" oninput="_editPaths[${i}].path=this.value" style="border:none;background:none;width:100%;outline:none;padding:4px 6px;color:var(--text);font-size:12px">
+      </div>
+      <button type="button" class="btn xs danger" onclick="removePathRow(${i})">✕</button>
+    </div>`).join('');
+  _editPaths.forEach((_,i)=>initPathDropZone(`pdr-${i}`,i));
+}
+
+function initPathDropZone(zoneId,idx){
+  const zone=document.getElementById(zoneId); if(!zone) return;
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.style.borderColor='var(--accent)';zone.style.background='var(--accent-bg)';});
+  zone.addEventListener('dragleave',()=>{zone.style.borderColor='var(--border)';zone.style.background='';});
+  zone.addEventListener('drop',e=>{
+    e.preventDefault();zone.style.borderColor='var(--border)';zone.style.background='';
+    const text=e.dataTransfer.getData('text')||e.dataTransfer.getData('text/plain');
+    if(text&&text.trim()){_editPaths[idx].path=text.trim().replace(/^["']|["']$/g,'');renderPathEditor();return;}
+    const entry=e.dataTransfer.items&&e.dataTransfer.items[0]&&e.dataTransfer.items[0].webkitGetAsEntry?e.dataTransfer.items[0].webkitGetAsEntry():null;
+    if(entry){_editPaths[idx].path=entry.name;renderPathEditor();toast('Got name — prepend full path if needed');return;}
+    const file=e.dataTransfer.files[0];if(file){_editPaths[idx].path=file.name;renderPathEditor();}
+  });
+}
+
+function addPathRow(){_editPaths.push({label:'',path:''});renderPathEditor();}
+function removePathRow(i){_editPaths.splice(i,1);renderPathEditor();}
+function collectPaths(){return _editPaths.filter(p=>p.path.trim());}
+
 // ── LINK EDITOR ───────────────────────────────────────
 const LINK_PRESETS = ['GitHub','GitHub (frontend)','GitHub (backend)','Google Drive','Vercel','Netlify','Supabase','Notion','Linear','Figma','Railway','Render','Fly.io','Cloudflare','Custom…'];
 let _editLinks = [];
