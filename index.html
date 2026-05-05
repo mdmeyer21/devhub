@@ -939,7 +939,7 @@ function renderRecent(){
 }
 
 // ── DETAIL ────────────────────────────────────────────
-function openDetail(pid){
+async function openDetail(pid){
   const ps=getProjects(),p=ps.find(x=>x.id===pid); if(!p) return;
   let r=[pid,...getRecent().filter(x=>x!==pid)].slice(0,8);
   setRecent(r); p.lastOpened=now(); setProjects(ps); renderRecent();
@@ -956,6 +956,13 @@ function openDetail(pid){
     ${socials.length?`<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px">Platforms</div><div class="bubble-row">${socials.map(sid=>{const pl=platMap[sid];return pl?`<a class="plat ${sid}" href="${esc(pl.url)}" target="_blank" rel="noopener">${pl.icon} ${pl.name}</a>`:''}).join('')}</div></div>`:''}
     ${(()=>{const pths=p.paths&&p.paths.length?p.paths:p.path?[{label:'',path:p.path}]:[];return pths.length?`<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Files & Folders</div>${pths.map(f=>`<div class="mono-row" style="margin-bottom:5px">${f.label?`<span style="font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0">${esc(f.label)}</span>`:''}<span>claude "${esc(f.path)}"</span><button class="btn xs" onclick="copy('claude &quot;${esc(f.path)}&quot;','command')">copy</button></div>`).join('')}</div>`:''})()}
     ${apis.length?`<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px">API Keys</div>${apis.map(a=>`<div class="key-row" style="margin-bottom:6px"><span class="chip api-chip" style="flex-shrink:0">${esc(a.name)}</span><span class="key-val">${esc(a.key||'(no key)')}</span><button class="btn xs" onclick="copy('${esc(a.key||'')}','${esc(a.name)}')">copy</button></div>`).join('')}</div>`:''}
+    <div style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Cloud Files</div>
+        <label class="btn xs" style="cursor:pointer">+ Upload <input type="file" id="detail-file-input" multiple style="display:none" onchange="onDetailFileInput(event,'${pid}')"></label>
+      </div>
+      <div id="detail-files-list"><div style="font-size:12px;color:var(--muted)">Loading…</div></div>
+    </div>
     <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Checklist</div>
     <div class="cl" style="margin-bottom:6px">
       ${cl.map(i=>`<div class="cli${i.done?' done':''}"><input type="checkbox" ${i.done?'checked':''} onchange="toggleCheck('${pid}','${i.id}',this.checked);openDetail('${pid}')"><span>${esc(i.text)}</span><button class="btn xs ghost" style="margin-left:auto;color:var(--red)" onclick="deleteCheckItem('${pid}','${i.id}')">✕</button></div>`).join('')}
@@ -968,7 +975,45 @@ function openDetail(pid){
     <textarea class="mem" id="mem-${pid}" onblur="saveMem('${pid}',this.value)">${esc(p.memoryFile||memTemplate(p))}</textarea>
     <p style="font-size:11px;color:var(--muted);margin-top:5px">Drop the .md into a new Claude chat to resume exactly where you left off.</p>`;
   openModal('detail-modal');
-  setTimeout(()=>renderBubbleMap(pid), 50);
+  // load cloud files then render bubble map with them
+  const files = await listProjectFiles(pid);
+  renderDetailFiles(pid, files);
+  setTimeout(()=>renderBubbleMap(pid, files), 50);
+}
+
+function renderDetailFiles(pid, files){
+  const el=document.getElementById('detail-files-list'); if(!el) return;
+  if(!files.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--muted)">No cloud files yet — upload some from Edit Project or the button above.</div>';
+    return;
+  }
+  el.innerHTML=files.map(f=>`
+    <div class="file-item">
+      <span class="file-item-icon">${fileIcon(f.name)}</span>
+      <span class="file-item-name">${esc(f.name)}</span>
+      <span class="file-item-size">${fmtSize(f.size)}</span>
+      <button class="btn xs" onclick="openFileUrl('${esc(f.path)}','${esc(f.name)}')">↓ Open</button>
+      <button class="btn xs danger" onclick="deleteDetailFile('${esc(pid)}','${esc(f.name)}')">✕</button>
+    </div>`).join('');
+}
+
+async function deleteDetailFile(pid,filename){
+  if(!confirm('Delete '+filename+'?'))return;
+  await deleteProjectFile(pid,filename);
+  const files=await listProjectFiles(pid);
+  renderDetailFiles(pid,files);
+  renderBubbleMap(pid,files);
+  toast('Deleted '+filename);
+}
+
+async function onDetailFileInput(e,pid){
+  const files=[...e.target.files]; if(!files.length)return;
+  for(const f of files){toast('Uploading '+f.name+'…');await uploadProjectFile(pid,f);}
+  const updated=await listProjectFiles(pid);
+  renderDetailFiles(pid,updated);
+  renderBubbleMap(pid,updated);
+  toast(`✓ ${files.length} file${files.length>1?'s':''} uploaded`);
+  e.target.value='';
 }
 
 function detailAddItem(pid){
