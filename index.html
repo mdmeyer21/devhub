@@ -606,6 +606,7 @@ document.getElementById('nav').addEventListener('click', e => {
   btn.classList.add('on');
   if (curTab==='assets') populateAssetProjFilter();
   if (curTab==='social') renderSocial();
+  if (curTab==='map') setTimeout(renderMapTab, 50);
 });
 
 // ── PLATFORMS ─────────────────────────────────────────
