@@ -1009,12 +1009,17 @@ async function deleteDetailFile(pid,filename){
 }
 
 async function onDetailFileInput(e,pid){
-  const files=[...e.target.files]; if(!files.length)return;
-  for(const f of files){toast('Uploading '+f.name+'…');await uploadProjectFile(pid,f);}
+  const fileList=[...e.target.files]; if(!fileList.length)return;
+  let done=0;
+  for(const f of fileList){
+    const relName=f.webkitRelativePath||f.name;
+    toast(`Uploading ${relName}… (${++done}/${fileList.length})`);
+    await uploadProjectFile(pid,f,relName);
+  }
   const updated=await listProjectFiles(pid);
   renderDetailFiles(pid,updated);
   renderBubbleMap(pid,updated);
-  toast(`✓ ${files.length} file${files.length>1?'s':''} uploaded`);
+  toast(`✓ ${done} file${done>1?'s':''} uploaded`);
   e.target.value='';
 }
 
