@@ -1161,6 +1161,54 @@ async function onModalFileInput(e){
   e.target.value='';
 }
 
+// Recursively collect all files from a drag-drop event, preserving relative paths.
+// Skips node_modules, .git, and hidden folders.
+const SKIP_DIRS=new Set(['node_modules','.git','.next','.nuxt','dist','build','__pycache__','.cache']);
+async function collectDroppedFiles(dataTransfer){
+  const result=[];
+  async function readEntry(entry,prefix){
+    if(entry.isFile){
+      await new Promise(res=>entry.file(f=>{result.push({file:f,name:(prefix||'')+f.name});res();},()=>res()));
+    } else if(entry.isDirectory){
+      if(SKIP_DIRS.has(entry.name)||entry.name.startsWith('.'))return;
+      const reader=entry.createReader();
+      await new Promise(res=>{
+        function readBatch(){
+          reader.readEntries(async entries=>{
+            if(!entries.length){res();return;}
+            for(const e of entries)await readEntry(e,(prefix||'')+entry.name+'/');
+            readBatch();
+          },()=>res());
+        }
+        readBatch();
+      });
+    }
+  }
+  const items=[...(dataTransfer.items||[])].filter(i=>i.kind==='file');
+  if(items.length&&items[0].webkitGetAsEntry){
+    for(const item of items){const e=item.webkitGetAsEntry();if(e)await readEntry(e,'');}
+  } else {
+    [...(dataTransfer.files||[])].forEach(f=>result.push({file:f,name:f.name}));
+  }
+  return result;
+}
+
+async function uploadDroppedFiles(pid,dataTransfer,badgeEl,refreshFn){
+  const items=await collectDroppedFiles(dataTransfer);
+  if(!items.length)return;
+  if(badgeEl)badgeEl.textContent=`(uploading ${items.length} file${items.length>1?'s':''}…)`;
+  let done=0;
+  for(const {file,name} of items){
+    // skip files >50MB silently, warn on >10MB
+    if(file.size>50*1024*1024){toast('Skipped (>50MB): '+name);continue;}
+    toast(`Uploading ${name}… (${++done}/${items.length})`);
+    await uploadProjectFile(pid,file,name);
+  }
+  const updated=await listProjectFiles(pid);
+  refreshFn(pid,updated);
+  toast(`✓ ${done} file${done>1?'s':''} uploaded`);
+}
+
 function initModalFileDrop(pid){
   const zone=document.getElementById('pm-file-drop'); if(!zone)return;
   zone.onclick=()=>document.getElementById('pm-file-input').click();
@@ -1168,12 +1216,8 @@ function initModalFileDrop(pid){
   zone.ondragleave=()=>zone.classList.remove('over');
   zone.ondrop=async e=>{
     e.preventDefault();zone.classList.remove('over');
-    const files=[...e.dataTransfer.files];if(!files.length)return;
-    document.getElementById('pm-files-badge').textContent='(uploading…)';
-    for(const f of files){toast('Uploading '+f.name+'…');await uploadProjectFile(pid,f);}
-    const updated=await listProjectFiles(pid);
-    renderModalFiles(pid,updated);
-    toast(`✓ ${files.length} file${files.length>1?'s':''} uploaded`);
+    const badge=document.getElementById('pm-files-badge');
+    await uploadDroppedFiles(pid,e.dataTransfer,badge,renderModalFiles);
   };
 }
 const editProject=pid=>openProjModal(pid);
