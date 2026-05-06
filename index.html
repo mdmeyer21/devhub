@@ -1622,7 +1622,7 @@ async function renderMapTab(){
 
   // file nodes + edges (per-project, up to 6 each)
   projects.forEach(p=>{
-    const pFiles=(allFiles[p.id]||[]).slice(0,6);
+    const pFiles=(allFiles[p.id]||[]);
     pFiles.forEach(f=>{
       const nid='file:'+p.id+':'+f.name;
       mkNode(nid,{kind:'file',file:f,mass:0.5,radius:18,label:f.name.length>12?f.name.slice(0,11)+'…':f.name,icon:fileIcon(f.name),onclick:()=>openFileUrl(f.path,f.name)});
