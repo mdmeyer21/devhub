@@ -1057,7 +1057,7 @@ function renderBubbleMap(pid, cloudFiles){
   const p=getProjects().find(x=>x.id===pid); if(!p) return;
   const apis=getAPIs().filter(a=>a.projectId===pid);
   const assets=getAssets().filter(a=>a.projectId===pid).slice(0,4);
-  const files=(cloudFiles||_filesCache[pid]||[]).slice(0,8);
+  const files=(cloudFiles||_filesCache[pid]||[]);
   const W=canvas.offsetWidth||600, H=canvas.offsetHeight||420;
   const cx=W/2, cy=H/2;
 
